@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0CEB2759-49D4-49BB-B10D-E5D315E2BFD9}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>CS559Proj3</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\FreeType-2.1.4\include;$(ProjectDir)\libnoise-1.0.0\include;$(ProjectDir)\DevIL-1.7.8\include;$(ProjectDir)\Box2D_v2.2.1;$(ProjectDir)\freeglut\include;$(ProjectDir)\glm-0.9.3.4\;$(ProjectDir)\glew-1.9.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>DevIL.lib;ILU.lib;ILUT.lib;Box2D.lib;glew32.lib;freeglut.lib;libnoise.lib;libfreetype.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)\libnoise-1.0.0\lib\Debug;$(ProjectDir)\DevIL-1.7.8\lib\;$(ProjectDir)\freeglut\lib;$(ProjectDir)\glew-1.9.0\lib;$(ProjectDir)\Box2D_v2.2.1\lib\Debug;$(ProjectDir)\FreeType-2.1.4\lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\FreeType-2.1.4\include;$(ProjectDir)\libnoise-1.0.0\include;$(ProjectDir)\DevIL-1.7.8\include;$(ProjectDir)\Box2D_v2.2.1;$(ProjectDir)\freeglut\include;$(ProjectDir)\glm-0.9.3.4\;$(ProjectDir)\glew-1.9.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>DevIL.lib;ILU.lib;ILUT.lib;Box2D.lib;glew32.lib;freeglut.lib;libnoise.lib;libfreetype.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)\libnoise-1.0.0\lib\Release;$(ProjectDir)\DevIL-1.7.8\lib\;$(ProjectDir)\freeglut\lib;$(ProjectDir)\glew-1.9.0\lib;$(ProjectDir)\Box2D_v2.2.1\lib\Release;$(ProjectDir)\FreeType-2.1.4\lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Axes.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ContactListener.cpp" />
+    <ClCompile Include="Cube.cpp" />
+    <ClCompile Include="Cursor.cpp" />
+    <ClCompile Include="DrawObject.cpp" />
+    <ClCompile Include="FireShader.cpp" />
+    <ClCompile Include="FrameBufferObject.cpp" />
+    <ClCompile Include="FreeType.cpp" />
+    <ClCompile Include="glutInclude.cpp" />
+    <ClCompile Include="GoochShader.cpp" />
+    <ClCompile Include="Jumbotron.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Player.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)\libnoise-1.0.0\include;$(ProjectDir)\DevIL-1.7.8\include;$(ProjectDir)\Box2D_v2.2.1;$(ProjectDir)\freeglut\include;$(ProjectDir)\glm-0.9.3.4\;$(ProjectDir)\glew-1.9.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)\libnoise-1.0.0\include;$(ProjectDir)\DevIL-1.7.8\include;$(ProjectDir)\Box2D_v2.2.1;$(ProjectDir)\freeglut\include;$(ProjectDir)\glm-0.9.3.4\;$(ProjectDir)\glew-1.9.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderWithShadows.cpp" />
+    <ClCompile Include="Skybox.cpp" />
+    <ClCompile Include="SubShader.cpp" />
+    <ClCompile Include="ShadowFBO.cpp" />
+    <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="Stadium.cpp" />
+    <ClCompile Include="VertexAtt.cpp" />
+    <ClCompile Include="World.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+    <None Include="shaders\ADSShader.frag" />
+    <None Include="shaders\ADSShader.vert" />
+    <None Include="shaders\debug_norm_shader.frag" />
+    <None Include="shaders\debug_norm_shader.vert" />
+    <None Include="shaders\debug_pos_shader.frag" />
+    <None Include="shaders\debug_pos_shader.vert" />
+    <None Include="shaders\fire_shader.frag" />
+    <None Include="shaders\fire_shader.vert" />
+    <None Include="shaders\FlatShader.frag" />
+    <None Include="shaders\FlatShader.vert" />
+    <None Include="shaders\gooch_shader.frag" />
+    <None Include="shaders\gooch_shader.vert" />
+    <None Include="shaders\noise_normal.frag" />
+    <None Include="shaders\noise_normal.vert" />
+    <None Include="shaders\norm_shader.frag" />
+    <None Include="shaders\norm_shader.vert" />
+    <None Include="shaders\no_shader.frag" />
+    <None Include="shaders\no_shader.vert" />
+    <None Include="shaders\Phong_shader.frag" />
+    <None Include="shaders\Phong_shader.vert" />
+    <None Include="shaders\tex_no_lighting.frag" />
+    <None Include="shaders\tex_shader.frag" />
+    <None Include="shaders\tex_shader.vert" />
+    <None Include="shaders\tex_shader_holey.frag" />
+    <None Include="shaders\tex_shader_w_shadows.frag" />
+    <None Include="shaders\tex_shader_w_shadows.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Axes.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="ContactListener.h" />
+    <ClInclude Include="Cube.h" />
+    <ClInclude Include="Cursor.h" />
+    <ClInclude Include="DrawObject.h" />
+    <ClInclude Include="FireShader.h" />
+    <ClInclude Include="FrameBufferObject.h" />
+    <ClInclude Include="FreeType.h" />
+    <ClInclude Include="glutInclude.h" />
+    <ClInclude Include="GoochShader.h" />
+    <ClInclude Include="Jumbotron.h" />
+    <ClInclude Include="MaterialInfo.h" />
+    <ClInclude Include="PhysicsInclude.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderWithShadows.h" />
+    <ClInclude Include="Skybox.h" />
+    <ClInclude Include="SubShader.h" />
+    <ClInclude Include="ShadowFBO.h" />
+    <ClInclude Include="Sphere.h" />
+    <ClInclude Include="Stadium.h" />
+    <ClInclude Include="Textures.h" />
+    <ClInclude Include="VertexAtt.h" />
+    <ClInclude Include="World.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<head>
+<link rel = "stylesheet" href = "style.css"> </link>
+
+<!--Libraries!-->
+<script type = "text/javascript" src="./lib/gamepad.js"></script>
+<script type = "text/javascript" src="./lib/buzz.js"></script>
+<script type = "text/javascript" src = "./lib/TweenLite.min.js"> </script>
+<!--Sanic Studios Code !-->
+<script type = "text/javascript" src="./pacemaker_map.js"></script>
+<script type = "text/javascript" src="./game.js"></script>
+<script type = "text/javascript" src="./world_objects.js"></script>
+<script type = "text/javascript" src="./events.js"></script>
+<script type = "text/javascript" src="./button.js"></script>
+<script type = "text/javascript" src="./rendering.js"></script>
+<script type = "text/javascript" src="./transition.js"></script>
+<script type = "text/javascript" src="./setup.js"></script>
+
+<script type = "text/javascript">
+
+var fps = 60, now, lastUpdate = (new Date)*1 - 1, fpsControl = 1, x, y;
+
+// The higher this value, the less the FPS will be affected by quick changes
+// Setting this to 1 will show you the FPS of the last sampled frame only
+var fpsFilter = 10;
+
+	////////////////////////////////////////////////////////////////////////////////////////// UPDATE PLATFORM X POS (makes screen movement work)
+function update_platforms(x_change){
+	for(i = 0; i<platforms.length; i++){
+		platforms[i].x += x_change;
+	}
+}
+		
+function Control() {
+	this.space = false;
+	this.shift = false;
+	this.left = false;
+	this.right = false;
+	this.up = false;
+	this.down = false;
+	this.mouse_left = false;
+	this.mouse_right = false;
+	this.mouse_middle = false;
+	this.click_mouse_x = null;
+	this.click_mouse_y = null;
+	this.mouse_x = null;
+	this.mouse_y = null;
+	this.p = false;
+	this.attack = false;
+}
+
+function gamepadConnected(evt)
+{
+  //console.log(evt); 
+}
+window.addEventListener('MozGamepadConnected', gamepadConnected);
+		////////////////////////////////////////////////////////////////////////////////////////// PLATFORMS CLASS
+	
+function onFocus(){
+	windowActive = true;
+}
+
+function onBlur(){
+	windowActive = false;
+}
+
+// DISTANCE BETWEEN TWO OBJECTS
+function distanceBetween(Object1, Object2){
+	// return the distance between the centers of two objects
+	return Math.sqrt(
+				Math.pow(((Object1.x+.5*Object1.width)-(Object2.x+platform_x_movement+.5*Object2.width)),2)
+			  + Math.pow(((Object1.y+.5*Object1.height)-(Object2.y+0.5*Object2.height)),2)
+			  );
+}
+
+// ACTIONS TO DO BEFORE DRAWING (good place to update shit)
+function frame(){
+
+	if(document.activeElement.id == "draw_canvas" && windowActive){
+	// UPDATE DAT CHAR
+	
+		if (PlayerGame.state == GAMESTATE_GAMEPLAY) {
+			CurrPlayer.update();
+		}
+	}
+	
+	screenClear(PlayerGame);
+
+	//window.requestAnimationFrame(frame);
+	//if(is_chrome){
+	//	gametimeout = setTimeout(frame, 16);
+	//	draw_world();
+	//} else {
+		window.requestAnimationFrame(frame);
+		draw_world();
+	//}
+	
+
+	// IGNORE FRAME STUFF, it is used for accurate movement / fps counter
+	thisFrameFPS = 1000 / ((now=new Date) - lastUpdate);
+	if(thisFrameFPS < 10){
+		thisFrameFPS = 60;
+	}
+	lastfps = fps;
+	fps += (thisFrameFPS - fps) / fpsFilter;
+	if(isNaN(fps)){
+		// fps counter has glitched up, set it to a nice value
+		fps = 60;
+	}
+	lastUpdate = now;
+	fpsControl = 60/thisFrameFPS;
+	fpsWave = 60/thisFrameFPS;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////// IGNORE THESE
+window.addEventListener('keydown',key_event,true);
+window.addEventListener('keyup',key_event_up,true);
+window.addEventListener('mouseup', mouse_up, false);
+window.addEventListener('mousedown', mouse_down, false);
+
+window.onfocus = onFocus;
+window.onblur = onBlur;
+	
+</script> 
+</head>
+<body style="overflow: hidden;"  onload="page_load()">
+<div id = "root"> 
+<canvas onmousemove="mouse_move(event)" onmousedown="mouse_press(event)" id="draw_canvas" width="1200" height="600" tabindex="1"></canvas>
+
+<div id="fps" style="width: 50px;"></div><div id="ms" style="display: hidden;"></div>
+
+<script type="text/javascript">
+	gameCanvas = document.getElementById("draw_canvas");
+  	document.getElementById("draw_canvas").focus();
+</script>
+<a href = "heartbeat/index.html">secret boss fight </a>
+
+</div>
+</body>
+</html>
+

@@ -1,0 +1,1271 @@
+package game;
+
+import effects.Effect;
+import effects.SetDestAnimationEffect;
+import enchantments.Enchantment;
+import entities.Entity;
+import entities.buildings.*;
+import entities.characters.Character;
+import entities.characters.*;
+import entities.characters.personas.*;
+import entities.interactables.*;
+import entities.particles.DroppedItem;
+import entities.tiles.*;
+import gameAreas.*;
+import gameAreas.Map;
+import gui.BuildingPanel;
+import gui.SkillLevelUpGUI;
+import gui.StorageGUI;
+import items.*;
+
+//import java.awt.Rectangle;
+import java.io.Serializable;
+import java.util.*;
+
+import items.foundations.*;
+import org.lwjgl.util.*;
+
+import conditions.*;
+
+import org.newdawn.slick.SlickException;
+import skills.*;
+import util.*;
+
+public class Engine implements Serializable {
+
+	private static final long serialVersionUID = 411841692181414392L;
+
+
+	public static long fullTickDuration = 0;
+	public static long mouseTickDuration = 0;
+	public static long AIDuration = 0;
+	public static long tickDuration = 0;
+	public static long conditionsDuration = 0;
+	public static long spellsDuration = 0;
+	public static long FOWDuration = 0;
+	public static long renderDuration = 0;
+
+	//this^ number is ~50 seconds @ 60fps
+	//X*LCD ~= X minutes.
+	//I'm making the assumption then that the full cycle is 30 minutes.
+
+
+
+	private Land activeArea;
+
+
+
+	private transient GameScreen gameScreen;
+	private Player player;
+	private int seed = (int)(Math.random() * 1000000);
+	public final Random rand = new Random(seed);
+	private boolean paused = false;
+	private int interiorID = 0;
+	protected boolean lmbPressed = false;
+	protected boolean rmbPressed = false;
+	private int time = 3000;
+	private int mouseTicker = 0;
+	private ArrayList<Persona> selected = new ArrayList<Persona>();
+	private float zoomFactor = 2.0f;
+
+	private ArrayList<Persona> needToBeRemoved = new ArrayList<Persona>();
+
+	private Rectangle selectBox = null;
+
+	private boolean wPressed = false;
+	public void setWPressed(boolean pressed){
+		this.wPressed = pressed;
+	}
+	private boolean aPressed = false;
+	public void setAPressed(boolean pressed){
+		this.aPressed = pressed;
+	}
+	private boolean sPressed = false;
+	public void setSPressed(boolean pressed){
+		this.sPressed = pressed;
+	}
+	private boolean dPressed = false;
+	public void setDPressed(boolean pressed){
+		this.dPressed = pressed;
+	}
+
+	public Rectangle getSelectBox(){
+		return selectBox;
+	}
+
+	private ArrayList<Entity> needToBeMovedEntities = new ArrayList<Entity>();
+
+	public ArrayList<Civilization> getCivilizations() {
+		return civilizations;
+	}
+
+	private ArrayList<Civilization> civilizations = new ArrayList<Civilization>();
+
+
+	public int getSeed() {
+		return seed;
+	}
+
+	public Land getActiveLand() {
+		return this.activeArea;
+	}
+
+	public Rectangle getScreen(){
+		return activeArea.getScreen();
+	}
+	public Player getPlayer() {
+		return this.player;
+	}
+	public GameScreen getGameScreen() {
+		return gameScreen;
+	}
+
+	public void setGameScreen(GameScreen gs) {
+		this.gameScreen = gs;
+	}
+
+	public boolean isPaused() {
+		return paused;
+	}
+
+	// New Interiors will set their ID to the current ID and then increment it
+	// for the next Interior
+	public int getNextInteriorID() {
+		int thisID = interiorID;
+		++interiorID;
+		return thisID;
+	}
+
+	public int getTime() {
+		return time;
+	}
+
+	public float getZoom() {
+		return zoomFactor;
+	}
+
+	public void setZoom(float z) {
+		zoomFactor = z;
+	}
+//TODO: frameTick() Shortcut
+
+	private boolean needAdditionalFOWUpdate = false;
+
+	public void frameTick() {
+		if (!paused) {
+			long duration = System.nanoTime();
+			//mouseTicker is 0 through 10
+			if(mouseTicker < 11)++mouseTicker;
+			else mouseTicker = 0;
+
+			// else {
+			mouseInteractionTick();
+			// }
+			//>>    activeArea.tick();
+			if (time < 89999) ++time;
+			else time = 0;
+
+			activeArea.centerScreen(
+					player.getCharacter().getX() + player.getCharacter().getBaseMap().getX()*Map.SIZE*16,
+					player.getCharacter().getY() + player.getCharacter().getBaseMap().getY()*Map.SIZE*16
+			);
+			ArrayList<Persona> temp = new ArrayList<Persona>();
+
+			activeArea.getPersonas().reseed();
+			boolean goingToRefresh = true;
+			Character playerCharacter = player.getCharacter();
+			if(wPressed){
+				playerCharacter.setDY(-playerCharacter.BASE_SPEED);
+			}
+			if(sPressed){
+				playerCharacter.setDY(playerCharacter.BASE_SPEED);
+			}
+			if(aPressed){
+				playerCharacter.setDX(-playerCharacter.BASE_SPEED);
+			}
+			if(dPressed){
+				playerCharacter.setDX(playerCharacter.BASE_SPEED);
+			}
+
+			if(mouseTicker%1 == 0){
+				for (Persona p : activeArea.getPersonas().getPersonas()) {
+					//Point oldPosition = p.getCharacter().getAbsoluteLoc();
+					//TODO:p.moveAI(this);
+				}
+			}
+			if(count%ratio == 0)AIDuration = System.nanoTime() - duration;
+			for (Persona p : activeArea.getPersonas().getPersonas()) {
+				//Point oldPosition = p.getCharacter().getAbsoluteLoc();
+//				p.moveAI(this);
+				//TODO::::p.getCharacter().tick(activeArea);
+//				if(!goingToRefresh && !oldPosition.equals(p.getCharacter().getAbsoluteLoc())){
+//					goingToRefresh = true;
+//				}
+				if(p.getEquippedItem() != null)
+					p.getEquippedItem().tick();
+				//ArrayList<Condition> tempc = new ArrayList<Condition>();
+				//>     if(p.getTeam() == Constants.PLAYERTEAM) civilizations.get(0).updateVisible(map);
+			}
+			if(count%ratio == 0)tickDuration = System.nanoTime() - (duration + AIDuration);
+
+			for (Persona p : activeArea.getPersonas().getPersonas()) {
+				//Point oldPosition = p.getCharacter().getAbsoluteLoc();
+//				p.moveAI(this);
+				//p.getCharacter().tick(activeArea);
+//				if(!goingToRefresh && !oldPosition.equals(p.getCharacter().getAbsoluteLoc())){
+//					goingToRefresh = true;
+//				}
+
+				//ArrayList<Condition> tempc = new ArrayList<Condition>();
+
+				for(ArrayList<Condition> conditions : p.getCharacter().getConditionMap().values()){
+					ArrayList<Condition> tempc = new ArrayList<Condition>();
+
+					for(Condition c : conditions){
+						c.tick(this);
+						if (c.isOff()) {
+							c.turnOff();
+							tempc.add(c);
+						}
+						if(p.getCharacter().getHP() <= 0){
+							if(c.getSrc()!=null){
+								Experience.grantXP(p.getCharacter(), c.getSrc());
+							}
+							temp.add(p);
+						}
+					}
+					for (Condition c : tempc) {
+						conditions.remove(c);
+					}
+				}
+				//>     if(p.getTeam() == Constants.PLAYERTEAM) civilizations.get(0).updateVisible(map);
+			}
+			if(count%ratio == 0)conditionsDuration = System.nanoTime() - (duration + tickDuration);
+
+			for (Persona p2 : temp) {
+				activeArea.getPersonas().remove(p2);
+			}
+			for (Persona p2 : needToBeRemoved) {
+				activeArea.getPersonas().remove(p2);
+			}
+			//temp.clear();
+			needToBeRemoved.clear();
+			ArrayList<Effect> tempE = new ArrayList<Effect>();
+
+			for (Map iteratedMap : activeArea.getMaps()){
+				for (Effect effect : iteratedMap.getSpells()) {
+					//tempE.add(effect.tick(this));
+				}
+				for (Effect effect : tempE) {
+					iteratedMap.getSpells().remove(effect);
+				}
+			}
+			if(count%ratio == 0)spellsDuration = System.nanoTime() - (duration + conditionsDuration);
+
+
+			//if(count%ratio == 0)tickDuration = System.nanoTime() - (duration + AIDuration);
+			if(needAdditionalFOWUpdate && mouseTicker == 0){
+				civilizations.get(0).loseSight(activeArea);
+				needAdditionalFOWUpdate = false;
+			}
+			if(goingToRefresh && mouseTicker == 0){
+				needAdditionalFOWUpdate = true;
+				civilizations.get(0).updateVisible(activeArea);
+			}
+
+			if(count%ratio == 0)FOWDuration = System.nanoTime() - (duration + spellsDuration);
+			//civilizations.get(0).updateVisible(map);
+
+			if(!activeArea.getCenterPoint().equals(player.getMapLoc())){
+				if(tempcount++ > 100){
+					activeArea.moveCenter(player.getMapLoc());
+					tempcount = 0;
+				}
+			}
+
+//			++count;
+//			if(count%ratio == 0){
+//				for(Map mapa : activeArea.getMaps()){
+//					int[][] tiles = mapa.getMap();
+//					for (int r = 0; r < tiles.length; r++)
+//						for (int c = 0; c < tiles[r].length; c++) {
+//							Tiles.updateMap(tiles, r, c);
+//						}
+//
+//					mapa.refreshLightLevels(player);
+//				}
+//				count = 1;
+//			}
+			for(OmniSpawn spawn : activeArea.getSpawns()){
+				if(activeArea.getPersonas().size() < 50)spawn.tick(this);
+			}
+
+			if(count%ratio == 0)fullTickDuration= System.nanoTime() - duration;
+			count++;
+		}
+
+	}
+	int tempcount = 0;
+
+	public void mouseInteractionTick() {
+		long duration = System.nanoTime();
+		if(!rmbPressed && selectBox != null){
+
+			boolean foundAGuy = false;
+			for (Persona p : activeArea.getPersonas().get(selectBox)) {
+				if (p.getTeam() == player.getTeam()) {
+					if (p != player) {
+						if(!foundAGuy){
+							selected.clear();
+							foundAGuy = true;
+						}
+						selected.add(p);
+						System.out.println("selected " + p);
+					}
+				}
+			}
+
+			if (!foundAGuy) {
+				//System.out.println("deselected to the player");
+				deselectUnits();
+			}
+			selectBox = null;
+		}
+
+		if(!rmbPressed && !lmbPressed)return;
+
+		Point mouse = gameScreen.getMouse();
+
+		int mouseX = mouse.getX();
+		int mouseY = mouse.getY();
+
+		int mouseGridX = (mouseX/16)%Map.SIZE;
+		int mouseGridY = (mouseY/16)%Map.SIZE;
+
+		int mapX = (mouseX/16)/Map.SIZE;
+		int mapY = (mouseY/16)/Map.SIZE;
+
+		if(mouseX < 0 ){
+			mapX -= 1;
+			mouseGridX += Map.SIZE - 1;
+		}
+
+		if(mouseY < 0 ){
+			mapY -= 1;
+			mouseGridY += Map.SIZE - 1;
+		}
+
+		Map mouseMap = activeArea.get(mapX, mapY);
+		//if (mouseMap == null)return;
+
+
+		//System.out.println("mouseMap = " + mouseMap.getLoc());
+//		System.out.println("Mouse Grid loc = " + Demigods.getLoc(new Point(mouseGridX, mouseGridY)));
+//		System.out.println("Mouse absolute = " + Demigods.getLoc(mouse));
+//		System.out.println("The tile is: " + mouseMap.getMap()[mouseGridX][mouseGridY]);
+		//activeArea.getInfo(Demigods.getMouseAbsolute().getX(), Demigods.getMouseAbsolute().getY());
+
+		//System.out.println(lmbPressed + " , " + rmbPressed);
+
+//		int mouseGridX = (int)(mouseRectangle.getX() / (16));
+//		int mouseGridY = (int)(mouseRectangle.getY() / (16));
+//		if (rmbPressed) {
+//			boolean foundAGuy = false;
+//			for (Persona p : activeArea.getPersonas()) {
+//				if (p.getTeam() == player.getTeam()) {
+//					if (p.getCharacter().getBounds().intersects(mouseRectangle)) {
+//						selected = p;
+//						foundAGuy = true;
+//						System.out.println("selected " + p);
+//						break;
+//					}
+//				}
+//			}
+//			if (!foundAGuy) {
+//				System.out.println("deselected to the player");
+//				deselectUnits();
+//			}
+//		}
+//
+
+
+		if(rmbPressed){
+
+			if(selectBox != null){
+				int w = mouseX - selectBox.getX();
+				int h = mouseY - selectBox.getY();
+				selectBox = new Rectangle(selectBox.getX(), selectBox.getY(), w, h);
+			}else{
+				selectBox = new Rectangle(mouseX, mouseY, 1, 1);
+			}
+
+
+		}
+
+
+
+		ArrayList<Persona> temp = new ArrayList<Persona>();
+		for(Persona p : selected){
+			if(p.getCharacter().getHP() <= 0){
+				temp.add(p);
+			}
+		}for(Persona p : temp){
+			selected.remove(p);
+		}
+		if(selected.size() == 0){
+			selected.add(player);
+		}
+		if (selected.get(0) == player) {
+			playerSelectedTick(mouseGridX, mouseGridY, mouseMap);
+		} else {
+			//System.out.println("player not selected");
+			villagerSelectedTick();
+		}
+
+		//this.activeArea.refreshLightLevels(this);
+
+
+		if(count%ratio == 0)mouseTickDuration = System.nanoTime() - duration;
+
+	}
+
+	private int ratio = 15;
+	private int count = 0;
+
+	public void playerSelectedTick(int mouseGridX, int mouseGridY, Map mouseMap) {
+
+		FIRST_HALF: {
+			if (lmbPressed&&!gameScreen.haveToRelease) {
+				if(player.getCharacter().getAnimation() == null){
+					if (player.getCharacter().getSkillReadied()) {
+						if (player.getCharacter().getReadiedSkill().use(player.getCharacter(), Demigods.getMouseAbsolute())) {
+
+							player.getCharacter().setSkillReadied(false);
+
+							player.getCharacter().setReadiedSkill(null);
+
+						}
+
+
+						break FIRST_HALF;
+					}
+
+					if (player.getEquippedItem().isOffCooldown()) {
+
+						// Attack
+						//playerAttack(new Point(mouseGridX, mouseGridY));
+						playerAttack2(Demigods.getMouseAbsolute());
+						// Harvest
+						if(activeArea.isOutside()){
+							playerHarvest(mouseMap);
+						}
+						else{
+							playerHarvest(activeArea.get(0,0));
+						}
+
+						// Build
+						playerBuild(mouseGridX, mouseGridY, mouseMap);
+
+
+						// set on CD
+						player.getEquippedItem().use();
+						player.getCharacter().setSwinging(true);
+					}
+				}
+
+
+			}
+		}
+		SECOND_HALF: if (lmbPressed) {
+			if(!gameScreen.haveToRelease)
+				for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+					if (panel.click(gameScreen.getMouse())) {
+						break SECOND_HALF;
+					}
+				}
+			if(!gameScreen.haveToRelease || mouseTicker % 10 == 0){
+				// Interact
+				playerInteract();
+			}
+		}
+
+	}
+
+	public void villagerSelectedTick() {
+
+		MAKE_SURE_VILLAGER:{
+			for(Persona p:selected){
+				if(p instanceof Villager){
+					break MAKE_SURE_VILLAGER;
+				}
+			}
+			System.out.println("You selected a unit, but it wasn't a villager.");
+			deselectUnits();
+			System.out.println("Deselected to player.");
+			// If the above happens, then basically nothing happens that tick.
+			// Almost always happens on the first tick after the game loads from
+			// save.
+		}
+
+
+
+			//Villager v = (Villager)selected;
+			// /////////////////////////////////////////////////////////////////
+
+		SECOND_HALF: if (lmbPressed) {
+			if(!gameScreen.haveToRelease)
+				for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+					if (panel.click(gameScreen.getMouse())) {
+						break SECOND_HALF;
+					}
+				}
+			if(!gameScreen.haveToRelease || mouseTicker % 10 == 0){
+				// Interact
+				playerInteract();
+			}
+
+			if(lmbPressed){
+				for(Persona p : selected){
+					Villager v = (Villager)p;
+					//TODO:v.setDest(Demigods.getMouseAbsolute(), this);
+					//System.out.println(lmbPressed);
+				}
+				this.add(new SetDestAnimationEffect(this.getMouse()));
+			}
+
+
+		}
+
+
+	}
+
+	// TODO: Engine Constructor
+	public Engine() throws SlickException {
+		Civilization playerCiv = new Civilization(0);
+		civilizations.add(playerCiv);
+		player = new Player();
+		player.setCharacter(new Human(0, 0));
+
+//		player.getCharacter().setSkill(0, new Burn());
+//		player.getCharacter().setSkill(1, new QuickStrike());
+//		player.getCharacter().setSkill(2, new ShiftBlast());
+//		player.getCharacter().setSkill(3, new Icicle());
+//		player.getCharacter().setSkill(4, new DarkTendril());
+//		player.getCharacter().getSkills().add(new Smash());
+//		player.getCharacter().getSkills().add(new Flamethrower());
+		player.getCharacter().getSkills().add(new Jump());
+		player.getCharacter().getSkills().add(new Lunge());
+//		player.getCharacter().getSkills().add(new ThunderStorm());
+
+		while(player.getCharacter().getLvl()<1){
+			player.getCharacter().addXP(50);
+
+		}
+		player.setTeam(playerCiv.getTeam());
+
+		playerCiv.add(player);
+//		ChronomancerHat hat = new ChronomancerHat();
+//		hat.equip(player.getCharacter());
+//
+//		player.getCharacter().getArmorArray()[Character.HEAD] = hat;
+//		player.getCharacter().getArmorArray()[Character.CHEST] = new ChronomancerHat();
+//		player.getCharacter().getArmorArray()[Character.LEGS] = new ChronomancerHat();
+		addAllItems();
+		addSomeItems();
+//		addAllWeapons();
+		this.activeArea = new Land(seed, rand);
+		activeArea.enter(player, activeArea.getCenterMap().getEntrancePoint());
+
+		player.getCharacter().addCondition(new Adrenaline(player.getCharacter(), player.getCharacter(), 0));
+//		randomDungeons(10);
+//
+//		GreenSlimeSpawn slimer = new GreenSlimeSpawn(activeArea.getWidth() / 32, activeArea.getHeight() / 32, 200, activeArea.getPassable(), .005);
+//		activeArea.getSpawns().add(slimer);
+//
+//		FloatingTorsoSpawn torsoer = new FloatingTorsoSpawn(activeArea.getWidth() / 32, activeArea.getHeight() / 32, 200, activeArea.getPassable(), .001);
+//		activeArea.getSpawns().add(torsoer);
+//
+//		OrcSpawn orcer = new OrcSpawn(activeArea.getWidth() / 32, activeArea.getHeight() / 32, 200, activeArea.getPassable(), .001);
+//		activeArea.getSpawns().add(orcer);
+//
+//		SaveManager.saveEngine(this);
+//		SaveManager.saveOverworld((Region)activeArea);
+//		IronGolem testGolem = new IronGolem(30,30);
+//		testGolem.initializeToBossLevel();
+//		activeArea.getPersonas().add(   new IronGolemAI(testGolem)    );
+//		SimpleMob bill = new SimpleMob( new Human( 35, 35)  );
+//		bill.setTeam(0);
+//		playerCiv.add(bill);
+//		activeArea.getPersonas().add(bill);
+
+//		makeRadiusGrass(player.getCharacter().getAbsX(), player.getCharacter().getAbsY(), 10*16);
+//		activeArea.makeBuilding(
+//				new DungeonBuilding(160, 160),
+//				160 - (2*16), 160 - (5*16),
+//				new DungeonFoundation(), -5
+//		);
+
+
+		Villager bill = new Villager(new Human(35, 35));
+		playerCiv.add(bill);
+		activeArea.getPersonas().add(bill);
+		Villager steve = new Villager(new Human(29, 35));
+		playerCiv.add(steve);
+		activeArea.getPersonas().add(steve);
+		Villager clyde = new Villager(new Human(32, 37));
+		playerCiv.add(clyde);
+		activeArea.getPersonas().add(clyde);
+		Villager howard = new Villager(new Human(32, 40));
+		playerCiv.add(howard);
+		activeArea.getPersonas().add(howard);
+		steve.makeWoodcutter(2);
+		bill.makeWoodcutter(3);
+		clyde.makeSwordsman(3);
+		howard.makeBuilder(3);
+
+		selected.add(0,player);
+
+		//player.getCharacter().getConditions().add(new ShiftBlastConditon(player.getCharacter(), 7*Constants.TICKS_PER_SECOND, 10));
+
+
+//  (Persona persona, Character character, double chance, boolean on, int limit, boolean nightTimeSpawner, int areaType, int level)
+
+		activeArea.getSpawns().add(new OmniSpawn(new SimpleMob(), new GreenSlime(), .01, 25, false, OmniSpawn.OUTSIDE ));
+		activeArea.getSpawns().add(new OmniSpawn(new BatAI(), new Bat(), .01, 25, true, OmniSpawn.OUTSIDE ));
+		activeArea.getSpawns().add(new OmniSpawn(new BatAI(), new Bat(), .05, 25, false, OmniSpawn.CAVES ));
+		activeArea.getSpawns().add(new OmniSpawn(new BatAI(), new Bat(), .01, 25, false, OmniSpawn.DUNGEON ));
+		activeArea.getSpawns().add(new OmniSpawn(new SimpleMob(), new GreenSlime(), .03, 35, false, OmniSpawn.CAVES ));
+		activeArea.getSpawns().add(new OmniSpawn(new SimpleMob(), new GreenSlime(), .03, 35, false, OmniSpawn.DUNGEON ));
+		activeArea.getSpawns().add(new OmniSpawn(new AStarHunter(), new RedSlime(), .01, 35, false, OmniSpawn.CAVES, 3 ));
+		activeArea.getSpawns().add(new OmniSpawn(new SimpleCasterAI(), new IcicleSkeleton(), .006, 25, false, OmniSpawn.DUNGEON ));
+		activeArea.getSpawns().add(new OmniSpawn(new AStarHunter(), new Skeleton(), .006, 35, false, OmniSpawn.DUNGEON, 5 ));
+		activeArea.getSpawns().add(new OmniSpawn(new SimpleMob(), new FloatingTorso(), .005, 10, false, OmniSpawn.OUTSIDE, 5 ));
+//		activeArea.getSpawns().add(new OmniSpawn(new AStarHunter(), new Orc(), .0005, 35, false, OmniSpawn.OUTSIDE, 10 ));
+	}
+	public void postInitialize() {
+		//TempVillage village = new TempVillage(rand, activeArea);
+	}
+	private void makeRadiusGrass(int absx, int absy, int radius){
+		for(int dx = -radius; dx <= radius; dx++)
+		for(int dy = -radius; dy <= radius; dy++){
+			Point newPoint = new Point(absx + dx, absy + dy);
+			if(Maths.dist(newPoint, new Point(absx, absy)) <= radius){
+				activeArea.setTile(absx + dx, absy + dy, Tiles.GRASS00);
+				activeArea.setPassable(absx + dx, absy + dy, true);
+				activeArea.setResourceTile(absx + dx, absy + dy, null);
+				activeArea.setFogOfWar(absx + dx, absy + dy, Civilization.FOW_VISIBLE);
+			}
+		}
+	}
+
+
+	public void deselectUnits() {
+		selected.clear();
+		selected.add(0,player);
+	}
+
+	public void pause() {
+		paused = true;
+	}
+
+	public void unpause() {
+		paused = false;
+	}
+
+	/**
+	 * Notation is a hit b, so b will be bounced back. Eventually will need to
+	 * be modified for a knockback force parameter.
+	 *
+	 *
+	 * @param src
+	 *            the attacker
+	 * @param tgt
+	 *            the knocked back
+	 */
+	public static void bounce(Persona src, Persona tgt) {
+		bounce(src.getCharacter(), tgt.getCharacter());
+	}
+
+	public static void bounce(Character src, Character tgt) {
+//		bounce(src.getAbsoluteLoc(), tgt);
+	}
+
+//	public static void bounce(Point a, Character tgt){
+//		int dx = 0;
+//		int dy = 0;
+//		if(a.getX() > tgt.getAbsX())dx = -1;
+//		else if(a.getX() == tgt.getAbsX())dx = 0;
+//		else if(a.getX() < tgt.getAbsX())dx = 1;
+//
+//		if(a.getY() > tgt.getAbsY())dy = -1;
+//		else if(a.getY() == tgt.getAbsY())dy = 0;
+//		else if(a.getY() < tgt.getAbsY())dy = 1;
+//
+//		if(dx==0&&dy==0){
+//			dx = -2;
+//			dy = -2;
+//		}
+//		tgt.setKnockback(new Knockback(tgt, dx, dy));
+//	}
+
+
+	public ArrayList<Persona> getSelected() {
+		return selected;
+	}
+	public boolean playerIsSelected(){
+		return selected.get(0).equals(player);
+	}
+
+	private void playerAttack2(Point mouse){
+		player.getCharacter().getEquippedItem().attack(mouse);
+	}
+
+
+	private void playerHarvest(Map mouseMap) {
+		Point mouse = Demigods.getMouseAbsolute();
+		int mx = mouse.getX();
+		int my = mouse.getY();
+		ResourceTile tile = activeArea.getResourceTile(mx, my);
+		if (tile != null) {
+			if (Maths.dist(mouse, player.getCharacter().getLoc()) < (5*16)) {
+
+				if (activeArea.getTile(mx, my) == Tiles.TREE||
+					activeArea.getTile(mx, my) == Tiles.CACTUS) {
+					gameScreen.getParticles().add(Particle.newTreeParticle(mx/16, my/16, (int)(Math.random() * 4 - 2), (int)(Math.random() * 2) + 1));
+				}
+				Audio.playHit();
+
+				if (tile.isAppropriateTool(player.getEquippedItem())) {
+					Tool tool = (Tool)player.getEquippedItem();
+
+					Item i = tile.harvest(tool.getHarvestRate());
+					if(i!=null){
+						DroppedItem item = new DroppedItem(mx/16*16, my/16*16, i);
+						mouseMap.getDroppedItems().add(item);
+					}
+
+				} else {
+					if (tile.getScraps() > 0) {
+						tile.setScraps(tile.getScraps() - 1);
+						Item i = new Scraps();
+						DroppedItem item = new DroppedItem(mx/16*16, my/16*16, i);
+						//item.setAbsoluteLoc(Demigods.getMouseAbsolute());
+						mouseMap.getDroppedItems().add(item);
+					}
+				}
+
+				tileEmptyCheck(activeArea, tile, mx, my);
+			}
+
+		}
+
+	}
+
+	public static void tileEmptyCheck(Land activeArea, ResourceTile tile, int x, int y){
+		if (!tile.hasResources()) {
+			if (activeArea.getTile(x, y) == Tiles.TREE) {
+				activeArea.setPassable(x, y, true);
+				activeArea.setTile(x, y, Tiles.STUMP);
+				activeArea.setResourceTile(x, y, null);
+			}else if (activeArea.getTile(x, y) == Tiles.CACTUS) {
+				activeArea.setPassable(x, y, true);
+				activeArea.setTile(x, y, Tiles.SAND);
+				activeArea.setResourceTile(x, y, null);
+			} else if (activeArea.getTile(x, y) == Tiles.OVERWORLD_STONE) {
+				activeArea.setPassable(x, y, true);
+				activeArea.setTile(x, y, Tiles.DIRT);
+				activeArea.setResourceTile(x, y, null);
+			}
+		}
+	}
+
+	private void playerInteract() {
+
+		Point mouseAbsolute = Demigods.getMouseAbsolute();
+		int max = mouseAbsolute.getX();
+		int may = mouseAbsolute.getY();
+
+		boolean interacted = false;
+
+//		for(int dx = -10; dx < 10; dx++){
+//			for(int dy = -10; dy < 10; dy++){
+//				if(activeArea.getInteractable())
+//			}
+//		}
+
+		for (int r = - 10; r < 10; ++r) {
+			for (int c = - 10; c < 10; ++c) {
+				if(activeArea.getInteractable(max+r*16, may + c*16) != null){
+
+					Interactable interactable = activeArea.getInteractable(max+r*16, may + c*16);
+//					System.out.println(
+//							interactable
+//					);
+					int mgrx = max/16;
+					int mgry = may/16;
+					if(max < 0 && mgrx == 0)mgrx -= 1;
+					if(may < 0 && mgry == 0)mgry -= 1;
+
+					if(interactable.getAbsHitbox().contains(mouseAbsolute)){
+						for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+							panel.getHost().setShowingGUI(false);
+						}
+						gameScreen.getBuildingPanels().clear();
+						interactable.interact(this);
+						interacted = true;
+						if(interactable.needToRelease())gameScreen.haveToRelease = true;
+					}
+
+//					if(interactable.getAbsHitbox().intersects(new Rectangle(mgrx, mgry, 1, 1))){
+//
+//					}
+				}
+
+			}
+
+		}
+
+		if (!interacted) {
+			for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+				panel.getHost().setShowingGUI(false);
+			}
+			gameScreen.getBuildingPanels().clear();
+		}
+
+	}
+
+	private void playerBuild(int mouseGridX, int mouseGridY, Map mouseMap) {
+
+		Point playerPoint = player.getCharacter().getLoc();
+		Point mousePoint = Demigods.getMouseAbsolute();
+		int mAX = mousePoint.getX();
+		int mAY = mousePoint.getY();
+//
+//		int mouseAbsGX = mousePoint.getX()/16;
+//		if(mouseAbsGX < 0)mouseAbsGX -= 1;
+//		int mouseAbsGY = mousePoint.getY()/16;
+//		if(mouseAbsGY < 0)mouseAbsGY -= 1;
+
+		//System.out.println("    " + Maths.dist(playerPoint.getX(), mousePoint.getX(), playerPoint.getY(), mousePoint.getY()));
+		if (Maths.dist(playerPoint.getX(), mousePoint.getX(), playerPoint.getY(), mousePoint.getY()) < (10*16)) {
+			if (player.getEquippedItem().isFoundation()) {
+				Foundation i = (Foundation)player.getEquippedItem();
+				boolean placeable = true;
+				Rectangle potentialBounds = i.getPotentialBounds(mousePoint.getX()/16, mousePoint.getY()/16);
+
+				potentialBounds = new Rectangle(
+						potentialBounds.getX()*16,
+						potentialBounds.getY()*16,
+						potentialBounds.getWidth()*16,
+						potentialBounds.getHeight()*16
+				);
+
+				int potentialGWidth = potentialBounds.getWidth()/16;
+				int potentialGHeight = potentialBounds.getHeight()/16;
+
+
+
+
+//				if (placeable) {
+//					for (Persona p : activeArea.getPersonas()) {
+//						if (potentialBounds.intersects(p.getCharacter().getAbsBounds())) {
+//							placeable = false;
+//						}
+//					}
+//				}
+				if (placeable) {
+					for (int r = 0; r < potentialGWidth; ++r) {
+						for (int c = 0; c < potentialGHeight; ++c) {
+							if(activeArea.getEntrance(mAX + r*16,  mAY + c*16) != null){
+								placeable = false;
+								break;
+							}
+//							if ((mouseMap.getEntrances()[mouseGridX + r][mouseGridY + c] instanceof gameAreas.Entrance)) {
+//								placeable = false;
+//								break;
+//							}
+							if(!activeArea.getPassable(mAX + r*16,  mAY + c*16)){
+								placeable = false;
+								break;
+							}
+							if(activeArea.getPersonas().get(potentialBounds).size() >0){
+								placeable = false;
+							}
+//							if (!mouseMap.getPassable()[mouseGridX + r][mouseGridY + c]) {
+//								placeable = false;
+//								break;
+//							}
+						}
+					}
+				}
+
+				if (placeable) {
+					Building b = i.build(mouseGridX, mouseGridY);
+					b.setBaseMap(mouseMap);
+					b.setTeam(player.getTeam());
+					civilizations.get(0).add(b);
+					if(!i.buildingIsPassable()){
+						for (int r = 0; r < potentialGWidth; ++r) {
+							for (int c = 0; c < potentialGHeight; ++c) {
+								activeArea.setPassable(mAX + r*16, mAY + c*16, false);
+								//mouseMap.getPassable()[mouseGridX + r][mouseGridY + c] = false;
+							}
+						}
+					}
+					// activeArea.getCollidables().add(b);
+					mouseMap.getTickables().add(b);
+
+					activeArea.setInteractable(mAX + potentialGWidth*16 - 1*16, mAY + potentialGHeight*16 - 1*16, b);
+					//mouseMap.getInteractables()[mouseGridX + potentialGWidth - 1][mouseGridY + potentialGHeight - 1] = b;
+
+					player.removeItem(player.getSelectedItemNum());
+					if (b.isEnterable()) {
+						Point entranceAdjustment = b.getEntranceAdjustment();
+						int entranceAbsX = b.getX() + (entranceAdjustment.getX()*16);
+						int entranceAbsY = b.getY() + (entranceAdjustment.getY()*16);
+
+
+//						Entrance entrance = new Entrance(b.getEntranceCoordinates()[0], b.getEntranceCoordinates()[1], true, getNextInteriorID());
+//						int entranceAbsGX = b.getEntranceCoordinates()[0];
+//						entranceAbsGX += (b.getBaseMap().getX() * Map.SIZE);
+//						int entranceAbsGY= b.getEntranceCoordinates()[1];
+//						entranceAbsGY += (b.getBaseMap().getY() * Map.SIZE);
+//						if(b.getBaseMap().getX() < 0)entranceAbsGX +=1;
+//						if(b.getBaseMap().getY() < 0)entranceAbsGY +=1;
+
+						Entrance entrance = new Entrance(0,0, true, getNextInteriorID());
+						entrance.setXY(entranceAbsX, entranceAbsY);
+
+
+						//entrance.setAbsoluteLoc(entranceAbsGX*16, entranceAbsGY*16);
+
+						activeArea.setEntrance(entranceAbsX, entranceAbsY, entrance);
+						//mouseMap.getEntrances()[entrance.getGX()][entrance.getGY()] = entrance;
+						Interior interior = i.getInterior(seed, entrance);
+						b.setEntrance(entrance);
+						entrance.setTargetAbsLoc(interior.getEntrancePoint());
+						SaveManager.saveInterior(interior);
+					}
+
+					gameScreen.haveToRelease = true;
+
+				}
+
+
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+			} else if (player.getEquippedItem().isRoad() && activeArea.toString().equalsIgnoreCase("overworld")) {
+				//System.out.println("    Engine.playerBuild - Road");
+				Road road = (Road)player.getEquippedItem();
+				int roadID = road.getID();
+				if(activeArea.getTile(mAX, mAY) != roadID){
+
+					makeRoad(mAX-16, mAY-16, roadID);
+					makeRoad(mAX-16, mAY, roadID);
+					makeRoad(mAX-16, mAY+16, roadID);
+
+					makeRoad(mAX, mAY-16, roadID);
+					makeRoad(mAX, mAY, roadID);
+					makeRoad(mAX, mAY+16, roadID);
+
+					makeRoad(mAX+16, mAY-16, road.getID());
+					makeRoad(mAX+16, mAY, road.getID());
+					makeRoad(mAX+16, mAY+16, road.getID());
+
+					player.removeItem(player.getSelectedItemNum());
+
+				}
+			} else if (player.getEquippedItem().isLight() && lmbPressed) {
+
+				LightItem light = (LightItem)player.getEquippedItem();
+				if (mouseMap.getPassable()[mouseGridX][mouseGridY]) {
+					if (mouseMap.getInteractables()[mouseGridX][mouseGridY] == null && mouseMap.getLights()[mouseGridY][mouseGridX] == null) {
+						mouseMap.getLights()[mouseGridX][mouseGridY] = light.getItem(mouseGridX, mouseGridY);
+						player.removeItem(player.getSelectedItemNum());
+						gameScreen.haveToRelease = true;
+					}
+				}
+			} else if (player.getEquippedItem().isInteractableItem()){
+//					&& !activeArea.toString().equalsIgnoreCase("overworld")
+//					&& !activeArea.toString().equalsIgnoreCase("dungeon")
+//					&& !activeArea.toString().equalsIgnoreCase("Crafting hut")
+//					&& !activeArea.toString().equalsIgnoreCase("Workshop")
+//					&& !activeArea.toString().equalsIgnoreCase("smithy")) {
+				InteractableItem item = (InteractableItem)player.getEquippedItem();
+
+				System.out.println(
+						item
+				);
+				if (activeArea.getInteractable(mousePoint.getX(), mousePoint.getY()) == null) {
+					if (activeArea.getPassable(mousePoint.getX(), mousePoint.getY())) {
+						Interactable interactable = item.getItem(mousePoint.getX(), mousePoint.getY());
+						activeArea.setInteractable(mousePoint.getX(), mousePoint.getY(), interactable);
+						//mouseMap.getInteractables()[mouseGridX][mouseGridY] = item.getItem(mouseGridX, mouseGridY);
+						player.removeItem(player.getSelectedItemNum());
+						gameScreen.haveToRelease = true;
+					}
+				}
+			}
+
+		}
+	}
+
+	private void addAllItems() {
+		player.getCharacter().setInventory(new Inventory(10000));
+		// *
+		try {
+			for (int i = 0; i < Constants.allTheItems.length; i++) {
+				String name = Constants.allTheItems[i].toString();
+				if (!name.equalsIgnoreCase("nullitem") &&
+						!name.equalsIgnoreCase("Foundation") &&
+						!name.equalsIgnoreCase("Empty Hands") &&
+						!name.equalsIgnoreCase("lightsource") &&
+						!name.equalsIgnoreCase("road"))
+
+					player.getCharacter().getInventory().addItem(Constants.allTheItems[i]);
+			}
+
+		} catch (DoodleScapeException e) {}
+		// */
+	}
+
+	private void addAllWeapons() {
+		// *
+		try {
+			for (int i = 0; i < Constants.allTheItems.length; i++) {
+				String name = Constants.allTheItems[i].toString();
+				if (!name.equalsIgnoreCase("nullitem") && !name.equalsIgnoreCase("Foundation") && !name.equalsIgnoreCase("Empty Hands") && !name.equalsIgnoreCase("lightsource") && !name.equalsIgnoreCase("interactable") && !name.equalsIgnoreCase("road")) {
+					if (!name.contains("Foundation") && !name.contains("Bar") && !name.contains("Ore") && !name.contains("ore"))
+
+						player.getCharacter().getInventory().addItem(Constants.allTheItems[i]);
+				}
+
+			}
+
+		} catch (DoodleScapeException e) {}
+		// */
+	}
+
+	private void addSomeItems() {
+//		player.getCharacter().setInventory(new Inventory(10000));
+		try {
+//
+
+
+
+
+			player.getCharacter().getInventory().addItem(new WoodenBow());
+
+			addItem(new ChestItem(), 2);
+			addItem(new WoodenBow(), 1);
+			addItem(new Wood(), 4000);
+			addItem(new Arrow(), 4000);
+//			addItem(new Stone(), 4000);
+			addItem(new WoodenBarricadeFoundation(), 400);
+			addItem(new HouseFoundation(), 10);
+			addItem(new StoneGreatsword(), 1);
+			addItem(new GodSword(), 1);
+			addItem(new ChronomancerBlade(), 1);
+//			addItem(new BronzeChest(), 1);
+//			addItem(new BronzeHat(), 1);
+//			addItem(new BronzeLegs(), 1);
+//			addItem(new SteelAxe(), 1);
+
+			SteelAxe axe = new SteelAxe();
+			Enchantment.addEnchantment(axe, "Poisoned");
+			//Enchantment.addEnchantment(axe, "Mighty");
+			player.getCharacter().getInventory().addItem(axe);
+
+		} catch (DoodleScapeException e) {
+//
+		}
+	}
+	private void addItem(Item item, int quantity){
+		try {
+			for(int i = 0; i < quantity; ++i){
+				player.getCharacter().getInventory().addItem(Constants.getItemFromString(item.toString()));
+			}
+
+		} catch (DoodleScapeException e) {
+		}
+	}
+	public void addBuildingGUI(BuildingPanel panel) {
+		gameScreen.getBuildingPanels().add(panel);
+	}
+
+	public void add(Particle p) {
+		gameScreen.getParticles().add(p);
+	}
+
+
+	private void makeRoad(int x, int y, int type){
+		try {
+			if(activeArea.getTile(x, y) != Tiles.WATER&&
+					activeArea.getTile(x, y) != Tiles.TREE&&
+					activeArea.getTile(x, y) != Tiles.CACTUS){
+				activeArea.setTile(x, y, type);
+			}
+		} catch (NullPointerException e) {
+			System.out.println("Engine.makeRoad() caught a NPE");
+		}
+
+	}
+
+	private Civilization getCiv(Persona p){
+		for (Civilization civ: civilizations){
+			for (Persona p1 : civ.getPersonas()){
+				if (p1.equals(p))return civ;
+			}
+		}
+		return null;
+	}
+
+	public Persona removePerson(Persona p){
+		if(p == null)return null;
+		if (p.getCharacter().getHP() <= 0) {
+
+			for (Civilization civ : civilizations){
+				if (civ.getTeam() == p.getTeam()){
+					civ.getPersonas().remove(p);
+				}
+			}
+
+			for (Item q : p.getCharacter().getInventory().getItems()) {
+				if (q != null && !q.toString().equalsIgnoreCase("empty hands")) {
+					//>>    activeArea.getDroppedItems().add(new DroppedItem(p.getCharacter().getGX(), p.getCharacter().getGY(), q));
+				}
+			}
+
+
+			return p;
+		}
+		return null;
+	}
+	public void unloadPerson(Persona persona){
+		if(persona == null)return;
+
+		for (Civilization civ : civilizations){
+			if (civ.getTeam() == persona.getTeam()){
+				civ.getPersonas().remove(persona);
+			}
+		}
+		activeArea.getPersonas().remove(persona);
+	}
+	public Point getMouse(){
+		return gameScreen.getMouse();
+	}
+	public void add(Effect effect){
+		if(activeArea.isOutside()){
+			int mx = effect.getBaseMap().getX();
+			int my = effect.getBaseMap().getY();
+			//System.out.println("An Effect " + effect + "was added to " + mx +","+ my + "at " + effect.getLoc());
+			if(activeArea.get(mx, my) != null){
+				activeArea.get(mx, my).getSpells().add(effect);
+			}
+		}
+		else{
+			activeArea.get(0, 0).getSpells().add(effect);
+		}
+	}
+//	public void add(DroppedItem item, Entity entity){
+//		if(activeArea.isOutside()){
+//			int mx = entity.getBaseMap().getX();
+//			int my = entity.getBaseMap().getY();
+//			if(activeArea.get(mx, my) != null){
+//				activeArea.get(mx, my).getDroppedItems().add(item);
+//				item.setAbsoluteLoc(entity.getAbsX(), entity.getAbsY());
+//			}
+//		}
+//		else{
+//			activeArea.get(0, 0).getDroppedItems().add(item);
+//			item.setAbsoluteLoc(entity.getAbsX(), entity.getAbsY());
+//		}
+//	}
+//	public void add(Item item, Entity entity){
+//		DroppedItem newItem = new DroppedItem(item);
+//		newItem.setAbsoluteLoc(entity.getAbsX(), entity.getAbsY());
+//		if(activeArea.isOutside()){
+//			int mx = newItem.getBaseMap().getX();
+//			int my = newItem.getBaseMap().getY();
+//			if(activeArea.get(mx, my) != null){
+//				activeArea.get(mx, my).getDroppedItems().add(newItem);
+//			}
+//		}
+//		else{
+//			activeArea.get(0, 0).getDroppedItems().add(newItem);
+//		}
+//	}
+//	public void add(Item item, Entity entity, float dz){
+//		DroppedItem newItem = new DroppedItem(item);
+//		newItem.setDZ(dz);
+//		newItem.setAbsoluteLoc(entity.getAbsX(), entity.getAbsY());
+//		if(activeArea.isOutside()){
+//			int mx = newItem.getBaseMap().getX();
+//			int my = newItem.getBaseMap().getY();
+//			if(activeArea.get(mx, my) != null){
+//				activeArea.get(mx, my).getDroppedItems().add(newItem);
+//			}
+//		}
+//		else{
+//			activeArea.get(0, 0).getDroppedItems().add(newItem);
+//		}
+//	}
+//	public void add(Item item, Entity entity, float dx, float dy, float dz){
+//		DroppedItem newItem = new DroppedItem(item);
+//		newItem.setDX(dx);
+//		newItem.setDY(dy);
+//		newItem.setDZ(dz);
+//		newItem.setAbsoluteLoc(entity.getAbsX(), entity.getAbsY());
+//		if(activeArea.isOutside()){
+//			int mx = newItem.getBaseMap().getX();
+//			int my = newItem.getBaseMap().getY();
+//			if(activeArea.get(mx, my) != null){
+//				activeArea.get(mx, my).getDroppedItems().add(newItem);
+//			}
+//		}
+//		else{
+//			activeArea.get(0, 0).getDroppedItems().add(newItem);
+//		}
+//	}
+	public void add(DroppedItem item){
+		if(activeArea.isOutside()){
+			int mx = item.getBaseMap().getX();
+			int my = item.getBaseMap().getY();
+			if(activeArea.get(mx, my) != null){
+				activeArea.get(mx, my).getDroppedItems().add(item);
+			}
+		}
+		else{
+			activeArea.get(0, 0).getDroppedItems().add(item);
+		}
+	}
+	public Civilization getCivilization(Persona persona){
+		for(Civilization civ : civilizations){
+			if(civ.getTeam() == persona.getTeam())return civ;
+		}
+		return null;
+	}
+	public void addToBeRemoved(Persona p){
+		needToBeRemoved.add(p);
+	}
+	public void createStorageGUI(StorageGUI gui){
+		this.gameScreen.setGuiPanel(gui);
+		gameScreen.getGUI().openInventory();
+	}
+//	public void toggleSkillLevelUpPanel(Character character){
+//		if(this.gameScreen.getGuiPanel() == null){
+//			SkillLevelUpGUI panel = new SkillLevelUpGUI(this, character);
+//			this.gameScreen.setGuiPanel(panel);
+//		}
+//		else{
+//			gameScreen.closeGUIPanel();
+//		}
+//	}
+
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<head>
+
+<script type = "text/javascript" src="./control.js"></script>
+<script type = "text/javascript" src="./objects.js"></script>
+<script type = "text/javascript" src="./button.js"></script>
+<script type = "text/javascript" src="./update.js"></script>
+<script type = "text/javascript" src="./setup.js"></script>
+<script type = "text/javascript" src="./draw.js"></script>
+<script type = "text/javascript" src="./game.js"></script>
+
+<script type = "text/javascript">
+
+</script> 
+</head>
+<body style="overflow: hidden;"  onload="page_load()">
+
+<canvas onmousemove="mouse_move(event)" onmousedown="mouse_press(event)" id="draw_canvas" width="800" height="600" tabindex="1"></canvas>
+
+
+<script type="text/javascript">
+	gameCanvas = document.getElementById("draw_canvas");
+  	document.getElementById("draw_canvas").focus();
+</script>
+
+</body>
+</html>
+

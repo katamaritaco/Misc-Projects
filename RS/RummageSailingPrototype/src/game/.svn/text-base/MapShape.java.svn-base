@@ -1,0 +1,21 @@
+package game;
+
+public class MapShape {
+
+	public static int value;
+	public static int[][] shape;
+
+	/**
+	 * Applies the given shape starting at r, c, ignoring any value value
+	 */
+	public void applyShape(int[][] map, int xStart, int yStart) {
+		for (int c = 0; c < shape.length; ++c) {
+			for (int r = 0; r < shape[c].length; ++r) {
+				if (shape[c][r] != value) {
+					map[xStart + c][yStart + r] = shape[r][c];
+
+				}
+			}
+		}
+	}
+}

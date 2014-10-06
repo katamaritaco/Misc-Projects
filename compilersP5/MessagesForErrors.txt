@@ -1,0 +1,59 @@
+--Attempt to write a function                           WRITTEN | 
+    eg "cout << f;"
+--Attempt to write a struct name                        WRITTEN | 
+    eg "cout << P;"
+--Attempt to write a struct variable                    WRITTEN | 
+    eg "cout << p;"
+--Attempt to write void                                 WRITTEN | 
+    eg "cout << foo();"
+--Attempt to read a function                            WRITTEN |
+    eg "cin >> f;"
+--Attempt to read a struct name                         WRITTEN |
+    eg "cin >> P;"
+--Attempt to read a struct variable                     WRITTEN |
+    eg "cin >> p;"
+--Attempt to call a non-function                        WRITTEN |
+    eg "x();"
+    DO NOT TYPE CHECK PARAMETERS
+--Function call with wrong number of args               WRITTEN |
+    DO NOT TYPE CHECK PARAMETERS    
+--Type of actual does not match type of formal          WRITTEN |   
+    ONLY CHECK IF # ARGS IS CORRECT
+    GIVE AN ERROR MESSAGE FOR EACH ARGUMENT
+
+--Missing return value					WRITTEN |
+    ie having a null exp in a return stmt
+
+--Return with a value in a void function		WRITTEN |
+
+--Bad return value					WRITTEN |
+    ie the wrong type
+
+--Arithmetic operator applied to non-numeric operand    WRITTEN |
+    INCLUDES ++ and --
+    IF BOTH ARE WRONG, TWO ERRORS ARE REPORTED
+
+--Relational operator applied to non-numeric operand    WRITTEN |
+
+--Logical operator applied to non-bool operand          WRITTEN |
+
+--Non-bool expression used as an if condition           WRITTEN |
+
+--Non-bool expression used as a while condition         WRITTEN |
+
+--Type mismatch                                         WRITTEN |
+    FOR == AND !=
+
+--Equality operator applied to void functions           WRITTEN |
+
+--Equality operator applied to functions                WRITTEN |
+
+--Equality operator applied to struct names             WRITTEN |
+    
+--Equality operator applied to struct variables         WRITTEN |
+
+--Function assignment                                   WRITTEN |
+
+--Struct name assignment                                WRITTEN |
+
+--Struct variable assignment                            WRITTEN | 

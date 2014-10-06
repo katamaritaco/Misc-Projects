@@ -1,0 +1,105 @@
+Assignments:
+Dakota - Upgrade/Tool system
+Nick - Player, Item, Getter conglomerate
+Mike - Gamestates
+Leo - Enemy, Weapon
+Yucheng - Zone
+
+
+
+TODO:
+
+
+
+
+Hook{}
+	Hook picks up items
+		different speeds based on mass(not too accurate)
+
+World{}
+	'World' Gamestate to change zones
+
+	
+	Different zones have different stuff
+		Backgrounds, items, enemies
+
+Enemy{}	
+	Enemies
+		...
+
+Inventory{}
+	Create an inventory
+		GUI
+
+Item-Dex{}
+	Create the framework for an item-dex.
+		GUI
+
+NOTES FROM 3/1---------------------------------------
+Player
+	ship-->[class]Ship -Draw, numItems
+	cash
+	greenScore
+	greedScore
+	equippedItems - <Tool>
+	garbage - <Item>
+	inventory - <Tool>
+	tick(e)
+	draw()
+	castLine(Engine)
+	castNet()
+	equipItem(Tool, index)
+	changeShip(Ship)
+	sellItems()
+	unequipItem(index)
+Zone
+	drawBG()
+	playMusic()
+	spawnEnemy()
+	spawnItem()
+	items<>
+	enemies<>
+Tool
+	tick(e)
+	isGetter()
+	isWeapon()
+Weapon
+	attack(<enemies>)
+Getter
+	cast(Engine, Point)
+	isCasted()
+	cooldown
+Engine
+	getterEffects<>
+	attackEffects<>
+	currentZone
+Enemy
+	health
+	speed
+	tick(e)
+	damage (representing how fast it takes items)
+	damageDone
+	
+
+If you don't comment, we will kill you.
+___________________________________________
+STUFF THAT NEEDS TO BE DONE BY NEST
+-Game engine
+	(see above)
+-Madison training level
+	-Zone
+		-Background
+		-Special items
+		-Special characters
+	-Music & SFX
+	-Art for special items and characters
+	-Writing for level and item descriptions
+-Pre-Madison description (i.e. the prologue)
+-Post-level screen
+	-Payout
+	-Music
+	-Green/Greed scores
+	-Rummage-dex example
+-Description on NEST wikispace
+-Finish presentation and rehearse it
+-TEST TEST TEST TEST TEST

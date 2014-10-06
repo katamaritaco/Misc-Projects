@@ -1,0 +1,991 @@
+package game;
+
+import java.util.ArrayList;
+
+import effects.Effect;
+import entities.characters.Character;
+import entities.characters.personas.Persona;
+import entities.interactables.Interactable;
+import entities.particles.DroppedItem;
+import gameAreas.Entrance;
+import gameAreas.Map;
+
+import items.foundations.Foundation;
+import org.lwjgl.util.Point;
+import org.lwjgl.util.Rectangle;
+
+import org.newdawn.slick.*;
+import org.newdawn.slick.state.*;
+
+import util.Font;
+import util.Images;
+import entities.tiles.Tiles;
+import gui.*;
+
+public class GameScreen extends BasicGameState {
+
+	private Engine engine;
+
+	private Point mouse = new Point(-1, -1);
+
+	private Input input;
+	public boolean haveToRelease = false;
+	private ArrayList<Particle> particles = new ArrayList<Particle>();
+	private static final Color transparentBlack = new Color(0, 0, 0, .5f);
+	private double startOfTick = 0;
+	protected static boolean drawDebug = false;
+	protected static boolean drawTiming = false;
+	protected static boolean drawPaths = false;
+	//private Image lighting;
+	//private Graphics overlay;
+    private GuiManager gui;
+	private GUIPanel guiPanel;
+
+	private ArrayList<BuildingPanel> buildingPanels = new ArrayList<BuildingPanel>();
+
+	public static boolean drawBounds = false;
+
+	public Point getMouse() {
+		return mouse;
+	}
+
+	public ArrayList<BuildingPanel> getBuildingPanels() {
+		return buildingPanels;
+	}
+
+	public void setEngine(Engine e) {
+		engine = e;
+	}
+	public GUIPanel getGuiPanel() {
+		return guiPanel;
+	}
+
+	public void setGuiPanel(GUIPanel panel) {
+		this.guiPanel = panel;
+	}
+	public void closeGUIPanel(){
+		this.guiPanel = null;
+		engine.unpause();
+	}
+	public boolean drawingPaths(){return drawPaths;}
+
+	public void mouseDragged(int oldx, int oldy, int newx, int newy) {
+		if (gui.mouseDragged(oldx, oldy, newx, newy)) {
+            mouse.setLocation((int) (newx / Demigods.getZoom()) + engine.getActiveLand().getScreen().getX(), (int) (newy / Demigods.getZoom()) + engine.getActiveLand().getScreen().getY());
+        }
+		if(guiPanel!=null){
+			guiPanel.mouseDragged(oldx, oldy, newx,  newy);
+		}
+	}
+
+	public void mouseMoved(int oldx, int oldy, int newx, int newy) {
+		if (gui.mouseMoved(oldx, oldy, newx,  newy)) {
+            ZoomBar.mouseLeft();
+            mouse.setLocation((int) (newx / Demigods.getZoom()) + engine.getActiveLand().getScreen().getX(), (int) (newy / Demigods.getZoom()) + engine.getActiveLand().getScreen().getY());
+        }
+		if(guiPanel!=null){
+			guiPanel.mouseMoved(oldx, oldy, newx,  newy);
+		}
+
+	}
+
+	public void mousePressed(int button, int x, int y) {
+		if(guiPanel!=null && !guiPanel.clickInBounds(new Point(x, y))){
+			closeGUIPanel();
+		}
+		if (gui.mousePressed(button, x, y)) {
+            if (button == 0) {
+                engine.lmbPressed = true;
+            }
+            if (button == 1) {
+                engine.rmbPressed = true;
+            }
+            mouse.setLocation(
+		            (int) (x / Demigods.getZoom()) + engine.getActiveLand().getScreen().getX(),
+		            (int) (y / Demigods.getZoom()) + engine.getActiveLand().getScreen().getY()
+            );
+        }
+		if(guiPanel!=null){
+			guiPanel.mousePressed(button, x, y);
+		}
+    }
+
+	public void mouseReleased(int button, int x, int y) {
+		if (gui.mouseReleased(button, x, y)) {
+            if (button == 0) {
+                engine.lmbPressed = false;
+                //mouseRectangle.setSize(-1, -1);
+                //mouseRectangle.setLocation(-1, -1);
+            }
+            if (button == 1) {
+                engine.rmbPressed = false;
+                //mouseRectangle.setSize(-1, -1);
+                //mouseRectangle.setLocation(-1, -1);
+            }
+            haveToRelease = false;
+        }
+		if(guiPanel!=null){
+			guiPanel.mouseReleased(button, x, y);
+		}
+	}
+
+	public void mouseWheelMoved(int change) {
+		boolean guiMoved = gui.mouseWheelMoved(change);
+		if (guiMoved) {
+            //something non-GUI that requires the mouseWheel
+
+        }
+		if(guiPanel!=null){
+			guiPanel.mouseWheelMoved(change);
+		}
+		else if (guiMoved){
+			engine.getPlayer().changeSelectedItemNum(change);
+		}
+	}
+
+	public void keyPressed(int key, char c) {
+		KeyHandler.keyPressed(key, c);
+	}
+
+	public void keyReleased(int key, char c) {
+		KeyHandler.keyReleased(key, c);
+	}
+
+	public void init(GameContainer gc, StateBasedGame game) throws SlickException {
+		gui = new GuiManager();
+		input = new Input(600);
+		input.addListener(this);
+//		Crafting.init(Demigods.getPlayerInventory(), Demigods.getEngine().getActiveLand().get(Demigods.getPlayer().getMapLoc()));
+	}
+	public GuiManager getGUI(){return gui;}
+
+	// TODO Shortcut to render()
+	public void render(GameContainer gc, StateBasedGame game, Graphics g) throws SlickException {
+
+//		if(lighting == null){
+//			lighting = new Image(1056, 600);
+//			overlay = lighting.getGraphics();
+//		}
+		startOfTick = System.nanoTime();
+		long duration = System.nanoTime();
+		//System.out.println("GameScreen.render(){");
+		g.setAntiAlias(false);
+		g.setLineWidth(1);
+
+		Rectangle screenBounds = engine.getScreen();
+		float screenX = screenBounds.getX(), screenY = screenBounds.getY();
+		float screenW = screenBounds.getWidth(), screenH = screenBounds.getHeight();
+
+//		/*
+//		 * The renderXYZ() methods form the core of the actual game drawing. The
+//		 * rest of the stuff that is still in this method can be left here
+//		 * pretty static.
+//		 */
+//
+		render002(g, screenX, screenY, screenW, screenH);
+//		render003(g, screenX, screenY, screenW, screenH);
+
+		//render003 saves like, 2 fps :/
+
+
+		float z = Demigods.getZoom();
+
+		// ///////
+		// ITEMS//
+		// ///////
+		for(Map map : engine.getActiveLand().getMaps()){
+			for (DroppedItem i : map.getDroppedItems()) {
+//				Images.itemSheet.getSprite(i.item.getImageID()[0], i.item.getImageID()[1]).draw((i.getAbsX() - screenX) * z, (i.getAbsY() - i.getZ() - screenY) * z, 16 * z, 16 * z);
+				i.tick();
+			}
+		}
+
+		// /////////////////
+		// Skill Targeting//
+		// /////////////////
+		if(engine.getPlayer().getCharacter().getSkillReadied()){
+			engine.getPlayer().getCharacter().getReadiedSkill().readiedDraw(screenX, screenY, z, g);
+		}
+		// /////////////////////////////
+		// EQUIPPED FOUNDATION OUTLINE//
+		// /////////////////////////////
+		try {
+			if (engine.getPlayer().getEquippedItem().isFoundation()) {
+				Foundation f = (Foundation)engine.getPlayer().getEquippedItem();
+				int factor = 16;
+				int mgx = mouse.getX() / factor * factor;
+				int mgy = mouse.getY() / factor * factor;
+				if(mgx < 0)mgx -= 16;
+				if(mgy < 0)mgy -= 16;
+
+				int potentialWidth = f.getPotentialBounds(mgx, mgy).getWidth();
+				int potentialHeight = f.getPotentialBounds(mgx, mgy).getHeight();
+				g.setColor(Color.black);
+				g.drawRect((mgx - screenBounds.getX()) * z, (mgy - screenBounds.getY()) * z, (potentialWidth * 16) * z, (potentialHeight * 16) * z);
+			}
+		} catch (NullPointerException e) {}
+
+
+
+		// ///////////////
+		// SPELL EFFECTS//
+		// ///////////////
+		g.setColor(Color.red);
+		for(Map map : engine.getActiveLand().getMaps())
+		for (Effect effect : map.getSpells()) {
+			if(drawDebug){
+				Rectangle hitbox = effect.getAbsBounds();
+				g.fillRect((hitbox.getX()-screenX)*z, (hitbox.getY()-screenY)*z, hitbox.getWidth()*z, hitbox.getHeight()*z);
+			}
+			effect.draw(screenX, screenY, g, z);
+		}
+//
+		// ///////////
+		// CLICK BOX//
+		// ///////////
+		g.setColor(Color.black);
+		int factor = (int)(16);
+		int mgx = mouse.getX() / factor * factor;
+		int mgy = mouse.getY() / factor * factor;
+		if(mouse.getX() < 0)mgx -= 16;
+		if(mouse.getY() < 0)mgy -= 16;
+
+		g.drawRect((mgx - screenBounds.getX()) * z, (mgy - screenBounds.getY()) * z, 16 * z, 16 * z);
+		//g.drawRect(mouse.getX());
+
+		//////////////
+		//SELECT BOX//
+		//////////////
+		if(engine.getSelectBox() != null){
+			g.setColor(Color.white);
+			Rectangle box = engine.getSelectBox();
+			g.drawRect((box.getX() - screenBounds.getX()) * z, (box.getY() - screenBounds.getY()) * z, box.getWidth() * z, box.getHeight() * z);
+		}
+		// ///////////
+		// PARTICLES//
+		// ///////////
+		ArrayList<Particle> temp = new ArrayList<Particle>();
+		for (Particle p : particles) {
+			p.tick();
+			if (p.isOff()) {
+				temp.add(p);
+			}
+			p.draw(screenX, screenY, g, z);
+		}
+		for (Particle p : temp) {
+			particles.remove(p);
+		}
+
+		//////////////
+		// SELECTED //
+		//////////////
+		for (Persona p : engine.getSelected()){
+			if(p != engine.getPlayer()){
+				Character c = p.getCharacter();
+//				float x = c.getAbsX() -c.getImageXOffset() + c.getWidth()/2 - screenX - 4;
+//				float y = c.getAbsY() - screenY - c.getHeight();
+//				Images.sele/ctedArrow.draw(x*z, y*z, 8*z, 8*z);
+			}
+		}
+
+		// ////////////////
+		// GUI COMPONENTS//
+		// ////////////////
+
+		// This will be changed.
+		for (BuildingPanel panel : this.getBuildingPanels()) {
+			panel.draw(screenX, screenY, g);
+		}
+
+        gui.draw(g);
+		PauseMenu.draw(g);
+		ZoomBar.draw(g);
+		if(guiPanel != null){
+			guiPanel.draw(screenX,  screenY, g);
+		}
+
+        // FPS
+        Font.drawTriniganFgString(Integer.toString(gc.getFPS()), 1000, 570, 16, Color.white);
+        if (drawDebug) {
+//            Font.drawTriniganFgString(engine.getPlayer().getCharacter().getLoc(), 1000, 550, 16, Color.white);
+            Font.drawTriniganFgString(engine.getPlayer().getMapLoc().getX() + ", " + engine.getPlayer().getMapLoc().getY(), 1000, 530, 16, Color.white);
+            Font.drawTriniganFgString(engine.getActiveLand().getPersonas().size() + " " + engine.getActiveLand().getPersonas().toString(), 0, 110, 16, Color.white);
+
+            int writingY = 130;
+            for (Map map : engine.getActiveLand().getMaps()) {
+                Font.drawTriniganFgString(map.getSpells().toString(), 20, writingY, 16, Color.white);
+                writingY += 20;
+            }
+        }
+
+
+
+		// ////////////
+		// CONDITIONS//
+		// ////////////
+
+//		for (int i = 0; i < Demigods.getPlayer().getCharacter().getConditions().size(); ++i) {
+//			Condition condition = Demigods.getPlayer().getCharacter().getConditions().get(i);
+//			if (condition.isVisible()) {
+//				Images.skillSheet.getSprite(condition.getImageLoc().getX(), condition.getImageLoc().getY()).draw(5 + (i * 25), 470, 25, 25);
+//			}
+//		}
+
+
+
+	}
+
+	// TODO Shortcut to render002()
+
+	public void render002(Graphics g, float sx, float sy, float sw, float sh) {
+
+		float z = Demigods.getZoom();
+
+		int x0 = (int)(sx / 16) - 5;
+		int y0 = (int)(sy / 16) - 5;
+
+		int xf = (int)((sx + sw) / 16) + 5;
+		int yf = (int)((sy + sh) / 16) + 5;
+
+		ArrayList<Persona>[][] persons = new ArrayList[xf - x0 + 1][yf - y0 + 1];
+		Rectangle newBounds = new Rectangle(x0*16, y0*16,(xf - x0 + 1)*16,(yf - y0 + 1)*16);
+
+		for(Persona p : engine.getActiveLand().getPersonas().getPersonas()){
+			if(!p.getCharacter().getAbsHitbox().intersects(newBounds))continue;
+
+			Character character = p.getCharacter();
+
+			int pEndX =
+					0;//(int)((character.getAbsX() + character.getWidth() - character.getImageXOffset() - 4));
+			if(pEndX < 0){
+				pEndX = pEndX/16;
+				pEndX--;
+			}
+			else{
+				pEndX = pEndX/16;
+			}
+			int pEndY = 0;//(int)((character.getAbsY() + character.getHeight() - character.getImageYOffset() - 4));
+			if(pEndY < 0){
+				pEndY = pEndY/16;
+				pEndY--;
+			}
+			else{
+				pEndY = pEndY/16;
+			}
+//			int px = p.GX() + (int)(character.getWidth() / 16) - (character.getImageXOffset() / 16);
+//			int py = p.GY() + (int)(character.getHeight() / 16) - (character.getImageYOffset() / 16);
+
+			try {
+				if(persons[pEndX - x0][pEndY - y0] == null){
+					persons[pEndX - x0][pEndY - y0] = new ArrayList<Persona>();
+				}
+				persons[pEndX - x0][pEndY - y0].add(p);
+			} catch (IndexOutOfBoundsException e) {
+				//System.out.println("IOoBE");
+			}
+
+		}
+
+
+
+		g.setColor(Color.black);
+		Map drawingMap = engine.getActiveLand().get(0,0);
+		//System.out.println(drawingMap.getMapX() + ", " + drawingMap.getMapY());
+
+		//////////////
+		//FIRST LOOP//
+		//////////////
+		for (int c = y0; c < yf; ++c) {
+			for (int r = x0; r < xf; ++r) {
+				int x = r;
+				int y = c;
+				if(engine.getActiveLand().isOutside()){
+					 x = r%Map.SIZE;
+					 y = c%Map.SIZE;
+
+					int mapX = r/Map.SIZE;
+					int mapY = c/Map.SIZE;
+
+					if(x < 0 ){
+						mapX -= 1;
+						x += Map.SIZE;
+					}
+
+					if(y < 0 ){
+						mapY -= 1;
+						y += Map.SIZE;
+					}
+					drawingMap = engine.getActiveLand().get(mapX, mapY);
+				}
+				try {
+					if(drawingMap.getFogOfWar()[x][y] == Civilization.FOW_VISIBLE||
+							drawingMap.getFogOfWar()[x][y] == Civilization.FOW_SEEN||
+							drawingMap.getFogOfWar()[x][y] == Civilization.FOW_PERMAVISION||
+							drawingMap.getFogOfWar()[x][y] == Civilization.FOW_LOSTSIGHT){
+						Tiles.drawTile(r, c,x, y, sx, sy, drawingMap.getMap()[x][y], drawingMap.getMap(), z);
+//						g.setColor(Tiles.MINIMAP_COLORS[drawingMap.getMap()[x][y]]);
+//						g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+						// Entrances
+						if (drawingMap.getEntrances()[x][y] != null) {
+							drawEntrance(drawingMap.getEntrances()[x][y], r, c, sx, sy, z);
+						}
+						Interactable interactable = drawingMap.getInteractables()[x][y];
+						if (interactable != null) {
+							if(!interactable.drawnAbove()){
+								interactable.draw(sx, sy, z, g);
+							}
+						}
+					}
+						// Tiles
+
+//						// ///////////////
+//						// INTERACTABLES//
+//						// ///////////////
+//						if (drawingMap.getInteractables()[x][y] != null) {
+//							drawingMap.getInteractables()[x][y].draw(sx, sy, z);
+//						}
+					else{
+//						g.setColor(Color.black);
+//						g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+					}
+				} catch (ArrayIndexOutOfBoundsException e) {
+//					g.setColor(Color.black);
+//					g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+				} catch (NullPointerException e){
+//					g.setColor(Color.black);
+//					g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+				}
+			}
+		}
+
+
+
+		if(drawDebug){
+
+			for(Persona p : engine.getActiveLand().getPersonas().getPersonas()){
+				Character pc = p.getCharacter();
+
+				g.setColor(Color.orange);
+				g.fillRect(
+						(p.getCharacter().getAbsHitbox().getX() - sx)*z,
+						(p.getCharacter().getAbsHitbox().getY() - sy)*z,
+						p.getCharacter().getAbsHitbox().getWidth()*z,
+						p.getCharacter().getAbsHitbox().getHeight()*z
+				);
+				g.setColor(Color.cyan);
+//				g.fillRect(
+//						(p.getCharacter().getAbsX() - sx)*z,
+//						(p.getCharacter().getAbsY() - sy)*z,
+//						5*z,
+//						5*z
+//				);
+				p.draw(
+						(-(pc.getBaseMap().getX() * Map.SIZE * 16) + sx),
+						(-(pc.getBaseMap().getY() * Map.SIZE * 16) + sy),
+						z,
+						g);
+			}
+		}
+		else{
+			///////////////
+			//SECOND LOOP//
+			///////////////
+			drawingMap = engine.getActiveLand().get(0, 0);
+			for (int c = y0; c < yf; ++c) {
+				for (int r = x0; r < xf; ++r) {
+					int x = r;
+					int y = c;
+					if(engine.getActiveLand().isOutside()){
+						x = r%Map.SIZE;
+						y = c%Map.SIZE;
+
+						int mapX = r/Map.SIZE;
+						int mapY = c/Map.SIZE;
+
+						if(x < 0 ){
+							mapX -= 1;
+							x += Map.SIZE;
+						}
+
+						if(y < 0 ){
+							mapY -= 1;
+							y += Map.SIZE;
+						}
+						drawingMap = engine.getActiveLand().get(mapX, mapY);
+					}
+
+					try {
+						if(drawingMap.getFogOfWar()[x][y] == Civilization.FOW_VISIBLE||
+								drawingMap.getFogOfWar()[x][y] == Civilization.FOW_SEEN||
+								drawingMap.getFogOfWar()[x][y] == Civilization.FOW_PERMAVISION||
+								drawingMap.getFogOfWar()[x][y] == Civilization.FOW_LOSTSIGHT){
+
+							Tiles.drawSecondLayer(r, c,x, y, sx, sy, drawingMap.getMap()[x][y], drawingMap.getMap(), z);
+
+							if(drawingMap.getFogOfWar()[x][y] == Civilization.FOW_VISIBLE||
+									drawingMap.getFogOfWar()[x][y] == Civilization.FOW_PERMAVISION||
+									drawingMap.getFogOfWar()[x][y] == Civilization.FOW_LOSTSIGHT ){
+								// /////////////
+								// CHARCACTERS//
+								// /////////////
+								if (persons[r - x0][c - y0] != null) {
+									for(Persona p : persons[r - x0][c - y0]){
+										//Persona p = persons[r - x0][c - y0];
+										Character pc = p.getCharacter();
+										p.draw((-(pc.getBaseMap().getX()*Map.SIZE*16) + sx ), (-(pc.getBaseMap().getY()*Map.SIZE*16) + sy ), z, g);
+
+									}
+
+									//p.draw((-(pc.getBaseMap().getX()*Map.SIZE*16) + sx ), (-(pc.getBaseMap().getY()*Map.SIZE*16) + sy ), g, z);
+
+
+									//persons[r - x0][c - y0].draw(sx, sy, g, z);
+								}
+							}
+							// ///////////////
+							// INTERACTABLES//
+							// ///////////////
+							if (drawingMap.getInteractables()[x][y] != null) {
+								drawingMap.getInteractables()[x][y].draw(sx, sy, z,g);
+							}
+							// ////////////////
+							// RESOURCE TILES//
+							// ////////////////
+							if (drawingMap.getResources()[x][y] != null) {
+								drawingMap.getResources()[x][y].draw(sx, sy, z,g);
+							}
+						}
+
+
+					} catch (ArrayIndexOutOfBoundsException e) {
+//					g.setColor(Color.black);
+//					g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+					} catch (NullPointerException e){
+//					g.setColor(Color.black);
+//					g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+					}
+				}
+			}
+		}
+
+//		for(Persona p : engine.getActiveLand().getPersonas().getPersonas()){
+//			Character pc = p.getCharacter();
+//			for(Condition c : pc.getConditions()){
+//				if(c.isDrawn()){
+//					c.draw(sx, sy, z, g);
+//				}
+//			}
+//		}
+
+		// ///////////////////
+		// NIGHTTIME OVERLAY//
+		// ///////////////////
+		drawingMap = engine.getActiveLand().get(0,0);
+		for (int c = y0; c < yf; ++c) {
+			for (int r = x0; r < xf; ++r) {
+				int x = r;
+				int y = c;
+				if(engine.getActiveLand().isOutside()){
+					x = r%Map.SIZE;
+					y = c%Map.SIZE;
+					int mapX = r/Map.SIZE;
+					int mapY = c/Map.SIZE;
+					if(x < 0 ){
+						mapX -= 1;
+						x += Map.SIZE;
+					}
+					if(y < 0 ){
+						mapY -= 1;
+						y += Map.SIZE;
+					}
+					drawingMap = engine.getActiveLand().get(mapX, mapY);
+				}
+				try {
+					if(drawingMap.getFogOfWar()[x][y] == Civilization.FOW_VISIBLE||
+					drawingMap.getFogOfWar()[x][y] == Civilization.FOW_PERMAVISION||
+							drawingMap.getFogOfWar()[x][y] == Civilization.FOW_LOSTSIGHT	)continue;
+					else if(drawingMap.getFogOfWar()[x][y] == Civilization.FOW_SEEN){
+						g.setColor(transparentBlack);
+						g.fillRect((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+					}
+//					else {
+//						g.setColor(Color.black);
+//						g.fillRoundRect((r * 16 - sx - 5) * z, (c * 16 - sy - 5) * z, (16 + 10) * z, (16 + 10) * z, 10);
+//					}
+
+				} catch (ArrayIndexOutOfBoundsException e) {
+
+				}
+				catch (NullPointerException e) {
+					//System.out.println("A NPE was caught in GameScreen");
+				}
+
+			}
+		}
+
+	}
+	// TODO Shortcut to render003()
+	public void render003(Graphics g, float sx, float sy, float sw, float sh){
+		float z = Demigods.getZoom();
+
+		int x0 = (int)(sx / 16) - 5;
+		int y0 = (int)(sy / 16) - 5;
+
+		int xf = (int)((sx + sw) / 16) + 5;
+		int yf = (int)((sy + sh) / 16) + 5;
+
+		ArrayList<Persona>[][] persons = new ArrayList[xf - x0 + 1][yf - y0 + 1];
+		Rectangle newBounds = new Rectangle(x0*16, y0*16,(xf - x0 + 1)*16,(yf - y0 + 1)*16);
+
+		for(Persona p : engine.getActiveLand().getPersonas().getPersonas()){
+			if(!p.getCharacter().getAbsHitbox().intersects(newBounds))continue;
+
+			Character character = p.getCharacter();
+
+//			int pEndX = (int)((character.getAbsX() + character.getWidth() - character.getImageXOffset() - 4));
+//			if(pEndX < 0){
+//				pEndX = pEndX/16;
+//				pEndX--;
+//			}
+//			else{
+//				pEndX = pEndX/16;
+//			}
+//			int pEndY = (int)((character.getAbsY() + character.getHeight() - character.getImageYOffset() - 4));
+//			if(pEndY < 0){
+//				pEndY = pEndY/16;
+//				pEndY--;
+//			}
+//			else{
+//				pEndY = pEndY/16;
+//			}
+//			int px = p.GX() + (int)(character.getWidth() / 16) - (character.getImageXOffset() / 16);
+//			int py = p.GY() + (int)(character.getHeight() / 16) - (character.getImageYOffset() / 16);
+//
+//			try {
+//				if(persons[pEndX - x0][pEndY - y0] == null){
+//					persons[pEndX - x0][pEndY - y0] = new ArrayList<Persona>();
+//				}
+//				persons[pEndX - x0][pEndY - y0].add(p);
+//			} catch (IndexOutOfBoundsException e) {
+//				//System.out.println("IOoBE");
+//			}
+
+		}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		g.setColor(Color.black);
+		int x = x0;
+		int y = y0;
+		int r = x;//Remember to not think about it too much. (r,c)==(x,y)
+		int c = y;
+		int mapX = 0;
+		int mapY = 0;
+		boolean outside = engine.getActiveLand().isOutside();
+		Map drawingMap = engine.getActiveLand().get(mapX,mapY);
+		//This structure cuts the calculations out of EVERY tile, and just makes it calc every row
+		//seems to be a significant improvement, THEORETICALLY.
+		for(y = y0; y < yf; y++){
+
+			x = x0;
+			r = x;
+			if(outside){
+				r = x%Map.SIZE;
+				c = y%Map.SIZE;
+
+				mapX = x/Map.SIZE;
+				mapY = y/Map.SIZE;
+
+				if(r < 0 ){
+					mapX -= 1;
+					r += Map.SIZE;
+				}
+
+				if(c < 0 ){
+					mapY -= 1;
+					c += Map.SIZE;
+				}
+				drawingMap = engine.getActiveLand().get(mapX,mapY);
+			}
+
+			for(x = x0; x < xf; x++){
+				//////////////////////////////////////////////////////
+				//Do drawing here
+				try{
+					if(isSeen(drawingMap.getFogOfWar()[r][c])){
+						Tiles.simpleDrawTile(x*16,y*16,sx,sy,drawingMap.getMap()[r][c],z);
+						if (drawingMap.getEntrances()[r][c] != null) {
+							drawEntrance(drawingMap.getEntrances()[r][c], x, y, sx, sy, z);
+						}
+						Interactable interactable = drawingMap.getInteractables()[r][c];
+						if (interactable != null) {
+							if(!interactable.drawnAbove()){
+								interactable.draw(sx, sy, z, g);
+							}
+						}
+					}
+				}
+				catch(ArrayIndexOutOfBoundsException e){}
+				catch (NullPointerException e){}
+				//End of drawing
+				//////////////////////////////////////////////////////
+				r++;
+				if(outside){
+					if(r >= Map.SIZE){
+						r -= Map.SIZE;
+						mapX++;
+						drawingMap = engine.getActiveLand().get(mapX,mapY);
+					}
+				}
+			}//end of x iteration loop
+			c++;
+			if(outside){
+				if(c >= Map.SIZE){
+					c -= Map.SIZE;
+					mapY++;
+					//drawingMap = engine.getActiveLand().get(mapX,mapY);
+				}
+			}
+		}//end of y loop
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if(drawDebug){
+
+			for(Persona p : engine.getActiveLand().getPersonas().getPersonas()){
+				Character pc = p.getCharacter();
+
+				g.setColor(Color.orange);
+				g.fillRect(
+						(p.getCharacter().getAbsHitbox().getX() - sx)*z,
+						(p.getCharacter().getAbsHitbox().getY() - sy)*z,
+						p.getCharacter().getAbsHitbox().getWidth()*z,
+						p.getCharacter().getAbsHitbox().getHeight()*z
+				);
+				g.setColor(Color.cyan);
+//				g.fillRect(
+//						(p.getCharacter().getAbsX() - sx)*z,
+//						(p.getCharacter().getAbsY() - sy)*z,
+//						5*z,
+//						5*z
+//				);
+				p.draw(
+						(-(pc.getBaseMap().getX() * Map.SIZE * 16) + sx),
+						(-(pc.getBaseMap().getY() * Map.SIZE * 16) + sy),
+						z,
+						g);
+			}
+		}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		g.setColor(Color.black);
+		x = x0;
+		y = y0;
+		r = x;//Remember to not think about it too much. (r,c)==(x,y)
+		c = y;
+		mapX = 0;
+		mapY = 0;
+		outside = engine.getActiveLand().isOutside();
+		drawingMap = engine.getActiveLand().get(mapX,mapY);
+		//This structure cuts the calculations out of EVERY tile, and just makes it calc every row
+		//seems to be a significant improvement, THEORETICALLY.
+		for(y = y0; y < yf; y++){
+
+			x = x0;
+			r = x;
+			if(outside){
+				r = x%Map.SIZE;
+				c = y%Map.SIZE;
+
+				mapX = x/Map.SIZE;
+				mapY = y/Map.SIZE;
+
+				if(r < 0 ){
+					mapX -= 1;
+					r += Map.SIZE;
+				}
+
+				if(c < 0 ){
+					mapY -= 1;
+					c += Map.SIZE;
+				}
+				drawingMap = engine.getActiveLand().get(mapX,mapY);
+			}
+
+			for(x = x0; x < xf; x++){
+				//////////////////////////////////////////////////////
+				//Do drawing here
+				try{
+					if(isSeen(drawingMap.getFogOfWar()[r][c])){
+						Tiles.drawSecondLayerSimple(x,y,sx,sy,drawingMap.getMap()[r][c],z);
+						if(isVisible(drawingMap.getFogOfWar()[r][c])){
+
+							if (persons[x - x0][y - y0] != null) {
+								for(Persona p : persons[x - x0][y - y0]){
+									//Persona p = persons[r - x0][c - y0];
+									Character pc = p.getCharacter();
+									p.draw((-(pc.getBaseMap().getX()*Map.SIZE*16) + sx ), (-(pc.getBaseMap().getY()*Map.SIZE*16) + sy ), z, g);
+
+								}
+							}
+						}
+						Interactable interactable = drawingMap.getInteractables()[r][c];
+						if (interactable != null) {
+							if(interactable.drawnAbove()){
+								interactable.draw(sx, sy, z, g);
+							}
+						}
+						if (drawingMap.getResources()[r][c] != null) {
+							drawingMap.getResources()[r][c].draw(sx, sy, z,g);
+						}
+					}
+
+
+
+				}
+				catch(ArrayIndexOutOfBoundsException e){}
+				catch (NullPointerException e){}
+				//End of drawing
+				//////////////////////////////////////////////////////
+				r++;
+				if(outside){
+					if(r >= Map.SIZE){
+						r -= Map.SIZE;
+						mapX++;
+						drawingMap = engine.getActiveLand().get(mapX,mapY);
+					}
+				}
+			}//end of x iteration loop
+			c++;
+			if(outside){
+				if(c >= Map.SIZE){
+					c -= Map.SIZE;
+					mapY++;
+					//drawingMap = engine.getActiveLand().get(mapX,mapY);
+				}
+			}
+		}//end of y loop
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		g.setColor(Color.black);
+		x = x0;
+		y = y0;
+		r = x;//Remember to not think about it too much. (r,c)==(x,y)
+		c = y;
+		mapX = 0;
+		mapY = 0;
+		outside = engine.getActiveLand().isOutside();
+		drawingMap = engine.getActiveLand().get(mapX,mapY);
+		//This structure cuts the calculations out of EVERY tile, and just makes it calc every row
+		//seems to be a significant improvement, THEORETICALLY.
+		for(y = y0; y < yf; y++){
+
+			x = x0;
+			r = x;
+			if(outside){
+				r = x%Map.SIZE;
+				c = y%Map.SIZE;
+
+				mapX = x/Map.SIZE;
+				mapY = y/Map.SIZE;
+
+				if(r < 0 ){
+					mapX -= 1;
+					r += Map.SIZE;
+				}
+
+				if(c < 0 ){
+					mapY -= 1;
+					c += Map.SIZE;
+				}
+				drawingMap = engine.getActiveLand().get(mapX,mapY);
+			}
+
+			for(x = x0; x < xf; x++){
+				//////////////////////////////////////////////////////
+				//Do drawing here
+				TRY:try{
+					if(isVisible(drawingMap.getFogOfWar()[r][c])){
+						break TRY;
+					}
+					else
+					if(drawingMap.getFogOfWar()[r][c] == Civilization.FOW_SEEN){
+						g.setColor(transparentBlack);
+						g.fillRect((x * 16 - sx) * z, (y * 16 - sy) * z, 16 * z, 16 * z);
+					}
+
+				}
+				catch(ArrayIndexOutOfBoundsException e){}
+				catch (NullPointerException e){}
+				//End of drawing
+				//////////////////////////////////////////////////////
+				r++;
+				if(outside){
+					if(r >= Map.SIZE){
+						r -= Map.SIZE;
+						mapX++;
+						drawingMap = engine.getActiveLand().get(mapX,mapY);
+					}
+				}
+			}//end of x iteration loop
+			c++;
+			if(outside){
+				if(c >= Map.SIZE){
+					c -= Map.SIZE;
+					mapY++;
+					//drawingMap = engine.getActiveLand().get(mapX,mapY);
+				}
+			}
+		}//end of y loop
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	}
+
+	private static boolean isSeen(int fogOfWar){
+		return (fogOfWar == Civilization.FOW_VISIBLE||
+				fogOfWar == Civilization.FOW_SEEN||
+				fogOfWar == Civilization.FOW_PERMAVISION||
+				fogOfWar == Civilization.FOW_LOSTSIGHT);
+	}
+	private static boolean isVisible(int fogOfWar){
+		return (fogOfWar == Civilization.FOW_VISIBLE||
+				fogOfWar == Civilization.FOW_PERMAVISION||
+				fogOfWar == Civilization.FOW_LOSTSIGHT);
+	}
+	private void drawEntrance(Entrance e, int r, int c, float sx, float sy, float z){
+
+		if (e.isFacingUp()) {
+			if (e.isOn()) {
+				Images.tileSheet.getSprite(1, 4).draw((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+			} else {
+				Images.tileSheet.getSprite(0, 4).draw((r * 16 - sx) * z, (c * 16 - sy) * z, 16 * z, 16 * z);
+			}
+		} else {
+			if (e.isOn()) {
+				Images.tileSheet.getSprite(1, 4).draw((r * 16 - sx + 16) * z, (c * 16 - sy + 16) * z, (r * 16 - sx) * z, (c * 16 - sy) * z, 16, 16, 0, 0);
+			} else {
+				Images.tileSheet.getSprite(0, 4).draw((r * 16 - sx + 16) * z, (c * 16 - sy + 16) * z, (r * 16 - sx) * z, (c * 16 - sy) * z, 16, 16, 0, 0);
+			}
+		}
+		e.tick();
+	}
+
+
+	public void update(GameContainer gc, StateBasedGame game, int delta) throws SlickException {
+		startOfTick = System.nanoTime();
+		engine.frameTick();
+		startOfTick = System.nanoTime() - startOfTick;
+		startOfTick = startOfTick/1000000000;
+		if(startOfTick < 0.016){
+			Demigods.getSaveLoadQueue().handleTop();
+		}
+		//System.out.println(startOfTick);
+
+	}
+
+	public int getID() {
+		return 1;
+	}
+
+	public ArrayList<Particle> getParticles() {
+		return particles;
+	}
+}

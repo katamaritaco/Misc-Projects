@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<head>
+<link href='http://fonts.googleapis.com/css?family=Roboto+Condensed' rel='stylesheet' type='text/css'>
+<script type = "text/javascript" src="./pacemaker_map.js"></script>
+<script type = "text/javascript" src="./world_objects.js"></script>
+<script type = "text/javascript" src="./setup.js"></script>
+<script type = "text/javascript" src="./events.js"></script>
+<script type = "text/javascript" src="./button.js"></script>
+<script type = "text/javascript" src="./rendering.js"></script>
+<link href = "style.css" rel = "stylesheet" type = "stylesheet"> </link>
+<script type = "text/javascript">
+
+var fps = 60, now, lastUpdate = (new Date)*1 - 1, fpsControl = 1, x, y;
+
+// The higher this value, the less the FPS will be affected by quick changes
+// Setting this to 1 will show you the FPS of the last sampled frame only
+var fpsFilter = 10;
+
+	////////////////////////////////////////////////////////////////////////////////////////// UPDATE PLATFORM X POS (makes screen movement work)
+function update_platforms(x_change){
+	for(i = 0; i<platforms.length; i++){
+		platforms[i].x += x_change;
+	}
+}
+		
+function Control() {
+	this.space = false;
+	this.shift = false;
+	this.left = false;
+	this.right = false;
+	this.up = false;
+	this.down = false;
+	this.mouse_left = false;
+	this.mouse_right = false;
+	this.mouse_middle = false;
+	this.click_mouse_x = null;
+	this.click_mouse_y = null;
+	this.mouse_x = null;
+	this.mouse_y = null;
+	this.p = false;
+}
+
+function gamepadConnected(evt)
+{
+  console.log(evt); 
+}
+window.addEventListener('MozGamepadConnected', gamepadConnected);
+		////////////////////////////////////////////////////////////////////////////////////////// PLATFORMS CLASS
+	
+function onFocus(){
+	windowActive = true;
+}
+
+function onBlur(){
+	windowActive = false;
+}
+		////////////////////////////////////////////////////////////////////////////////////////// DISTANCE BETWEEN TWO OBJECTS
+function distanceBetween(Object1, Object2){
+	// return the distance between the centers of two objects
+	return Math.sqrt(
+				Math.pow(((Object1.x+.5*Object1.width)-(Object2.x+platform_x_movement+.5*Object2.width)),2)
+			  + Math.pow(((Object1.y+.5*Object1.height)-(Object2.y+0.5*Object2.height)),2)
+			  );
+}
+		////////////////////////////////////////////////////////////////////////////////////////// GAME CLASS
+function Game(ctx, x_boundary, y_boundary, frame_delay){
+	this.ctx = ctx;					// canvas context
+	this.frame_delay = frame_delay;	// ms delay between drawing
+	this.x_boundary = x_boundary;	// x-coord boundary
+	this.y_boundary = y_boundary;	// y-coord boundary
+	this.clearColor = "rgba(100, 100, 100, 0.01)";			// initial clear color is null
+	this.state = GAMESTATE_START;
+	this.resetGame = resetGame;
+			////////////////////////////////////////////////////////////////////////////////////// RESET GAME
+	function resetGame(){
+		collectable_count = 0;
+		collectable_count = 0;
+		collectable = new Array();
+		imageMap = null;
+		lastfps = 0;
+		platform_x_movement = 0;
+		platforms = new Array();
+		platform_update = 0;
+		begin_game();
+		clearTimeout(gametimeout);
+	}
+}
+
+function screenClear(currentGame){ 
+	ctx.fillStyle = currentGame.clearColor;
+	ctx.fillRect(0, 0, currentGame.x_boundary, currentGame.y_boundary);
+	return true;
+}
+		////////////////////////////////////////////////////////////////////////////////////////// AVOID THIS SHIT
+function drawObject(drawableObject, ctx){
+	ctx.drawImage(drawableObject.image, Math.round(drawableObject.x), Math.round(drawableObject.y), drawableObject.width, drawableObject.height);
+	return true;
+}
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////// UP DRAWN TO SCREEN
+function drawUI(context){
+
+	var canvas = document.getElementById("draw_canvas");
+	if(debug) {
+		// draw debugging UI
+		context.font = '15px Calibri';
+		context.fillStyle = "rgb(240,240,240)";
+		context.fillText("FPS-Avg: " 			+ fps.toFixed(0), 											120, 	20);
+		context.fillText("FPS-Imm: " 			+ thisFrameFPS.toFixed(2), 									120, 	35);
+		context.fillText("Collided: " 			+ CurrPlayer.grounded || CurrPlayer.grounded_last_frame, 	600, 	35);
+		context.fillText("Dist-Since-Change: " 	+ CurrPlayer.distance_since_sprite_change.toFixed(2), 		600, 	20);
+	} else {
+		// draw normal UI
+		context.drawImage(Cell.image, 15, 12);
+		context.font = '25px Calibri';
+		context.fillStyle = "rgb(240,240,240)";
+		context.fillText(" x ", 57, 42);
+		context.fillText("   " + collectable_count, 60, 43);
+	}
+
+	if(CurrPlayer.dead){
+		context.font = '30px Calibri';
+		context.fillText("You dead bro?",																230,	35);
+	}
+	if(document.activeElement.id != "draw_canvas" || !windowActive || Controller.p){ ////////////////////////////Known Bug - can pause while jumped
+				context.fillStyle = "rgba(50,50,50,0.5)";
+				context.fillRect(527, 247, 145, 50);
+				context.fillStyle = "rgb(240,240,240)";
+				context.font = '30px Calibri';
+				context.fillText("Paused",																		550,	280);
+	}
+}
+
+
+	///////////////////////////////////////////////////////////////////// ACTIONS TO DO BEFORE DRAWING (good place to update shit)
+function frame(){
+
+	if(document.activeElement.id == "draw_canvas" && windowActive){
+		///////////////////////////////////////////////////////////////////////////////////// UPDATE DAT CHAR
+		CurrPlayer.update();
+	}
+	
+	screenClear(PlayerGame);
+
+	//window.requestAnimationFrame(frame);
+	gametimeout = setTimeout(frame, 16);
+	draw_world();
+
+
+	// IGNORE FRAME STUFF, it is used for accurate movement / fps counter
+	thisFrameFPS = 1000 / ((now=new Date) - lastUpdate);
+	if(thisFrameFPS < 10){
+		thisFrameFPS = 60;
+	}
+	lastfps = fps;
+	fps += (thisFrameFPS - fps) / fpsFilter;
+	if(isNaN(fps)){
+		// fps counter has glitched up, set it to a nice value
+		fps = 60;
+	}
+	lastUpdate = now;
+	fpsControl = 60/thisFrameFPS;
+	fpsWave = 60/thisFrameFPS;
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////// IGNORE THESE
+window.addEventListener('keydown',key_event,true);
+window.addEventListener('keyup',key_event_up,true);
+window.addEventListener('mouseup', mouse_up, false);
+window.addEventListener('mousedown', mouse_down, false);
+
+window.onfocus = onFocus;
+window.onblur = onBlur;
+	
+</script> 
+</head>
+<body style="overflow: hidden;"  onload="page_load()">
+
+<canvas onmousemove="mouse_move(event)" onmousedown="mouse_press(event)" id="draw_canvas" width="1200" height="600" tabindex="1"></canvas>
+
+<div id="fps" style="width: 50px;"></div><div id="ms" style="display: hidden;"></div>
+
+<script type="text/javascript">
+	gameCanvas = document.getElementById("draw_canvas");
+  	document.getElementById("draw_canvas").focus();
+</script>
+
+</body>
+</html>
+

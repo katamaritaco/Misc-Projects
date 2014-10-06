@@ -1,0 +1,13 @@
+package util;
+
+public class DoodleScapeException extends Exception {
+
+	private static final long serialVersionUID = 1L;
+
+	public DoodleScapeException(String errorMessage) {
+		super(errorMessage);
+	}
+	public DoodleScapeException() {
+		//super();
+	}
+}

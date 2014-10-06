@@ -1,0 +1,16 @@
+#root{
+	width:1024px;
+	height:720px;
+	margin:0px auto;
+	background-color:#e2e2e2;
+	color:#cccccc;
+}
+
+#canv{
+	border:1px solid #e1e1e1;
+	background-color:#bbbbbb;
+	width:1000px;
+	height:700px;
+	margin:0px auto;
+	margin-left:10px;
+}

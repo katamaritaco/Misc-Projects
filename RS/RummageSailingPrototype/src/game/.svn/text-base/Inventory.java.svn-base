@@ -1,0 +1,180 @@
+package game;
+
+import items.*;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import util.Constants;
+import util.DoodleScapeException;
+import util.UncheckedDoodleScapeException;
+
+public class Inventory implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private double maxWeight = 0;
+	private int[] itemCounts;
+	private ArrayList<Item> items = new ArrayList<Item>();
+
+	public ArrayList<Item> getItems() {
+		return this.items;
+	}
+
+	public Inventory(double mw) {
+		maxWeight = mw;
+		itemCounts = new int[Constants.allTheItems.length];
+		for (int i = 0; i < itemCounts.length; ++i) {
+			itemCounts[i] = 0;
+		}
+	}
+
+	public void setMaxWeight(double mw) {
+		maxWeight = mw;
+	}
+
+	public double getMaxWeight() {
+		return maxWeight;
+	}
+
+	public int getItemCount(String item) throws UncheckedDoodleScapeException {
+		int count = -1;
+		for (int i = 0; i < itemCounts.length; ++i) {
+			if (item.equalsIgnoreCase(Constants.allTheItems[i].toString())) {
+				count = itemCounts[i];
+			}
+		}
+		if (count == -1) throw new UncheckedDoodleScapeException("Somehow the inventory doesn't have a count for " + item.getClass().toString() + "s. Check that shit out.");
+		return count;
+	}
+	public int getItemCount(Item item) throws UncheckedDoodleScapeException {
+		int count = -1;
+		for (int i = 0; i < itemCounts.length; ++i) {
+			if (item.toString().equals(Constants.allTheItems[i].toString())) {
+				count = itemCounts[i];
+			}
+		}
+		if (count == -1) throw new UncheckedDoodleScapeException("Somehow the inventory doesn't have a count for " + item.getClass().toString() + "s. Check that shit out.");
+		return count;
+	}
+
+	public double getInventoryWeight() {
+		double weight = 0;
+		for (Item i : items) {
+			weight += i.getWeight();
+		}
+		double roundedWeight = ((double)((int)(weight * 100))) / 100;
+		return roundedWeight;
+	}
+
+	public void addItem(Item i) throws DoodleScapeException {
+		if (!itemCanFit(i)) {
+			//throw new DoodleScapeException("There's no room in your inventory for that!");
+			throw new DoodleScapeException();
+		} else {
+			items.add(i);
+			for (int j = 0; j < Constants.allTheItems.length; ++j) {
+				if (i.toString().equals(Constants.allTheItems[j].toString()))
+					itemCounts[j]++;
+			}
+		}
+	}
+
+	private boolean itemCanFit(Item i) {
+		if (i == null) return true;
+		if (i.getWeight() + getInventoryWeight() > this.maxWeight) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	public Item findItem(Item i) {
+		if (hasItem(i)) return items.get(items.indexOf(i));
+		else return null;
+	}
+
+	public Item itemFromString(String name){
+		for(Item item : items){
+			if(item.toString().equalsIgnoreCase(name))return item;
+		}
+		return null;
+	}
+	public boolean hasItem(Item i) {
+		if (items.contains(i)) {
+			return true;
+		} else return false;
+	}
+	public boolean hasItem(String itemName) {
+		for(Item i : items){
+			if(i.toString().equalsIgnoreCase(itemName)){
+				return true;
+			}
+		}
+		return false;
+	}
+	public void removeItem(Item i) {
+		for (Item item : items) {
+			if (item.toString().equals(i.toString())) {
+				items.remove(item);
+				for (int j = 0; j < Constants.allTheItems.length; ++j) {
+					if (i.toString().equals(Constants.allTheItems[j].toString())) {
+						--itemCounts[j];
+						if (itemCounts[j] == 0) Demigods.getPlayer().unequipItem(i);
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	public ArrayList<String> toStringArray() {
+		ArrayList<String> itemList = new ArrayList<String>();
+		for (Item i : items) {
+			if (!i.getIsCounted()) {
+				int count = 0;
+				for (Item j : items) {
+					if (j.toString().equals(i.toString())) {
+						++count;
+						j.setIsCounted(true);
+					}
+				}
+				itemList.add(i.toString() + " x" + count);
+				i.setIsCounted(true);
+			}
+		}
+		for (Item i : items) {
+			i.setIsCounted(false);
+		}
+		return itemList;
+	}
+
+    public HashMap<String, Integer> getItemCounts() {
+        HashMap<String, Integer> itemCounts = new HashMap<String, Integer>();
+        for (Item i : items) {
+            if (itemCounts.containsKey(i.toString())) {
+                int newCount = itemCounts.get(i.toString()) + 1;
+                itemCounts.put(i.toString(), newCount);
+            } else {
+                itemCounts.put(i.toString(), 1);
+            }
+        }
+        return itemCounts;
+    }
+
+	public Item removeFirstItem() {
+		if (items.size() > 0) {
+			Item temp = items.remove(0);
+			for (int j = 0; j < Constants.allTheItems.length; ++j) {
+				if (temp.toString().equals(Constants.allTheItems[j].toString())) {
+					--itemCounts[j];
+					//if (itemCounts[j] == 0) Demigods.getPlayer().unequipItem(temp);
+					return temp;
+				}
+			}
+			return temp;
+		} else return null;
+	}
+}

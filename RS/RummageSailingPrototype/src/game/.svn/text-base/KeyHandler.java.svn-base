@@ -1,0 +1,238 @@
+package game;
+
+import entities.buildings.CaveBuilding;
+import entities.buildings.DungeonBuilding;
+import entities.characters.personas.Player;
+
+import org.lwjgl.util.Point;
+import org.newdawn.slick.Input;
+
+
+public class KeyHandler {
+
+    public static boolean shiftKeyPressed = false;
+
+    public static void keyPressed(int key, char c) {
+//	    Engine engine = Demigods.getEngine();
+	    NewEngine Newengine = Demigods.getNewEngine();
+//	    Land land = engine.getActiveLand();
+
+		Player player = Demigods.getPlayer();
+//    	if (key == Input.KEY_LEFT) land.setSpeedX(-GameArea.speed);
+//		if (key == Input.KEY_RIGHT) land.setSpeedX(GameArea.speed);
+//		if (key == Input.KEY_UP) land.setSpeedY(-GameArea.speed);
+//		if (key == Input.KEY_DOWN) land.setSpeedY(GameArea.speed);
+		if (key == Input.KEY_ESCAPE) {
+//			if (CraftingMenu.isOpen()) CraftingMenu.setOpen(false);
+//			else if (PauseMenu.isOpen()) {
+//				PauseMenu.setOpen(false);
+//				Demigods.getEngine().unpause();
+//			} else {
+//				PauseMenu.setOpen(true);
+//				Demigods.getEngine().pause();
+//			}
+			if(!Newengine.closeGUI()){
+				Newengine.togglePause();
+			}
+
+		}
+		if (key == Input.KEY_LSHIFT || key == Input.KEY_RSHIFT) {
+//			CraftingMenu.setShiftKeyPressed(true);
+            shiftKeyPressed = true;
+		}
+		if (key == Input.KEY_LCONTROL) {
+//			Demigods.getEngine().getActiveLand().centerScreen(player.getCharacter().getX(), player.getCharacter().getY());
+		}
+		if (key == Input.KEY_SPACE) {
+			System.out.println(player.getCharacter().getLoc());
+//			Entrance entrance = land.getEntrance(player.getCharacter().getX() + 8,player.getCharacter().getY()+8);
+//			if (entrance != null) {
+//
+//				System.out.println("   - " + entrance + " : " + entrance.getLoc());
+//				if (entrance.isActive()) {
+//					activeArea.getPersonas().remove(player);
+//					if(entrance.getID() != Constants.OVERWORLD_ID){
+//						land.enterInterior(player, entrance.getExitPoint(), entrance.getID());
+//					}
+//					else{
+//						land.enterOverworld(player, entrance.getExitPoint());
+//					}
+//
+//
+//				}
+//			}
+		}
+		if (c == 'x'||c == 'X') {
+//			if (!CraftingMenu.isOpen()) {
+//				CraftingMenu.setOpen(true);
+//				Demigods.getEngine().pause();
+//			} else {
+//				CraftingMenu.setOpen(false);
+//				Demigods.getEngine().unpause();
+//			}
+		}
+		if (c == 'a' || c == 'A') {
+//			engine.setAPressed(true);
+			Newengine.setAPressed(true);
+		}
+		if (c == 'd' || c == 'D') {
+//			engine.setDPressed(true);
+			Newengine.setDPressed(true);
+		}
+		if (c == 'w' || c == 'W') {
+//			engine.setWPressed(true);
+			Newengine.setWPressed(true);
+		}
+		if (c == 's' || c == 'S') {
+//			engine.setSPressed(true);
+			Newengine.setSPressed(true);
+		}
+		if (c == 'e' || c == 'E') {
+			Newengine.toggleInventory();
+//			Demigods.getEngine().getGameScreen().getGUI().toggleInventory();
+		}
+		if (c == 'r' || c == 'R') {
+//			Demigods.getEngine().getGameScreen().getGUI().toggleSkills();
+		}
+	    if (c == 'l' || c == 'L') {
+		    Demigods.getNewEngine().toggleSkillLevelUpPanel(Demigods.getPlayer().getCharacter());
+	    }
+	    if (c == '!') {
+			player.setSelectedItemNum(0);
+		}
+		if (c == '@') {
+			player.setSelectedItemNum(1);
+		}
+		if (c == '#') {
+			player.setSelectedItemNum(2);
+		}
+		if (c == '$') {
+			player.setSelectedItemNum(3);
+		}
+		if (c == '%') {
+			player.setSelectedItemNum(4);
+		}
+	    if (c == '|') {
+		    NewGameScreen.drawDebug = !NewGameScreen.drawDebug;
+	    }
+	    if (c == '}') {
+		    NewGameScreen.drawTiming = !NewGameScreen.drawTiming;
+	    }
+	    if (c == '{') {
+		    NewGameScreen.drawPaths = !NewGameScreen.drawPaths;
+	    }
+	    if (c == '1') {
+		    useSkillBar(0);
+	    }
+	    if (c == '2') {
+		    useSkillBar(1);
+	    }
+	    if (c == '3') {
+		    useSkillBar(2);
+	    }
+	    if (c == '4') {
+		    useSkillBar(3);
+	    }
+	    if (c == '5') {
+		    useSkillBar(4);
+	    }
+	    if (c == ',') {
+		    if (Newengine.getZoom() > 0.25)
+			    Newengine.setZoom(Newengine.getZoom() - 0.1f);
+		    if (Newengine.getZoom() < 0.25)
+			    Newengine.setZoom(0.25f);
+	    }
+	    if (c == '.') {
+		    if (Newengine.getZoom() < 4.0)
+			    Newengine.setZoom(Newengine.getZoom() + 0.1f);
+		    if (Newengine.getZoom() > 4.0)
+			    Newengine.setZoom(4.0f);
+	    }
+	    if (c == 'C') {
+		    try{
+			    CaveBuilding building = new CaveBuilding(0,0);
+			    Point mouse = Demigods.getMouseAbsolute();
+//			    land.makeBuilding(
+//					    building,
+//					    mouse.getX(), mouse.getY(),
+//					    new CaveFoundation(), Demigods.getEngine().getNextInteriorID()
+//					    );
+		    }catch (NullPointerException e){
+
+		    }
+	    }
+	    if (c == 'V') {
+		    try{
+			    DungeonBuilding building = new DungeonBuilding(0,0);
+			    Point mouse = Demigods.getMouseAbsolute();
+//			    land.makeBuilding(
+//					    building,
+//					    mouse.getX(), mouse.getY(),
+//					    new DungeonFoundation(), Demigods.getEngine().getNextInteriorID()
+//			    );
+		    }catch (NullPointerException e){
+
+		    }
+	    }
+    }
+
+
+	private static void useSkillBar(int index){
+		Player player = Demigods.getPlayer();
+		try {
+			if (player.getEquippedSkills()[index].isReadyable()) {
+				player.getCharacter().setSkillReadied(true);
+				player.getCharacter().setReadiedSkill(player.getEquippedSkills()[index]);
+			}
+			else {
+				player.getCharacter().useSkill(index, Demigods.getMouseAbsolute());
+			}
+		} catch (NullPointerException ignored) {
+
+		}
+	}
+    public static void keyReleased(int key, char c) {
+//	    Engine engine = Demigods.getEngine();
+	    NewEngine Newengine = Demigods.getNewEngine();
+//    	Land activeArea = engine.getActiveLand();
+	    Player player = Demigods.getPlayer();
+//    	if (key == Input.KEY_LEFT) activeArea.setSpeedX(0);
+//		if (key == Input.KEY_RIGHT) activeArea.setSpeedX(0);
+//		if (key == Input.KEY_UP) activeArea.setSpeedY(0);
+//		if (key == Input.KEY_DOWN) activeArea.setSpeedY(0);
+		if (player.getCharacter().getIsStopped()) {
+			player.getCharacter().setIsStopped(false);
+		}
+		if (key == Input.KEY_LSHIFT || key == Input.KEY_RSHIFT) {
+//			CraftingMenu.setShiftKeyPressed(false);
+            shiftKeyPressed = false;
+		}
+		if (c == 'a' || c == 'A') {
+			player.getCharacter().setDX(0);
+//			newPlayer.getCharacter().setDX(0);
+//			engine.setAPressed(false);
+			Newengine.setAPressed(false);
+		}
+		if (c == 'd' || c == 'D') {
+			player.getCharacter().setDX(0);
+//			newPlayer.getCharacter().setDX(0);
+//			engine.setDPressed(false);
+			Newengine.setDPressed(false);
+
+		}
+		if (c == 'w' || c == 'W') {
+			player.getCharacter().setDY(0);
+//			newPlayer.getCharacter().setDY(0);
+//			engine.setWPressed(false);
+			Newengine.setWPressed(false);
+
+		}
+		if (c == 's' || c == 'S') {
+			player.getCharacter().setDY(0);
+//			newPlayer.getCharacter().setDY(0);
+//			engine.setSPressed(false);
+			Newengine.setSPressed(false);
+
+		}
+    }
+}

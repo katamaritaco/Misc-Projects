@@ -1,0 +1,391 @@
+package game;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
+import entities.buildings.Building;
+import entities.characters.personas.Persona;
+import entities.characters.Character;
+import entities.tiles.Tiles;
+import gameAreas.Land;
+import org.lwjgl.util.Point;
+import util.Maths;
+
+public class Civilization implements Serializable {
+
+	public static final int FOW_UNSEEN = 0;
+	public static final int FOW_SEEN = 1;
+	public static final int FOW_VISIBLE = 2;
+	public static final int FOW_LOSTSIGHT = 3;
+	public static final int FOW_PERMAVISION = 4;
+	public static final int FOW_SIZE = 16;
+	public static int nextTeam = 0;
+	private int team;
+
+	private ArrayList<Persona> personas = new ArrayList<Persona>();
+	private ArrayList<Building> buildings = new ArrayList<Building>();
+	public Civilization(){
+		this.team = ++nextTeam;
+	}
+	public Civilization(int team){
+		this.team = team;
+		++nextTeam;
+	}
+	public ArrayList<Persona> getPersonas(){return personas;}
+	public ArrayList<Building> getBuildings(){return buildings;}
+
+	public void add(Persona p){
+		personas.add(p);
+		p.setTeam(team);
+	}
+	public Persona remove(Persona p){if(personas.contains(p)){return p;}else return null;}
+
+	public void add(Building b){buildings.add(b);}
+	public Building remove(Building b){if(buildings.contains(b)){return b;}else return null;}
+
+	public int getTeam() {return team;}
+	private static final int VIEW_RADIUS = 12;
+	public void updateVisible(Land land, ArrayList<Persona> personas){
+		for (Persona p : personas){
+			int size = VIEW_RADIUS;
+			Character character = p.getCharacter();
+			int personaX = character.getX() - character.getImageXOffset() + (int)character.getWidth()/2;
+			int personaY = character.getY() - character.getImageYOffset() + (int)character.getHeight()/2;
+
+			int gx = personaX/FOW_SIZE;if(personaX<0)gx-=1;
+			int gy = personaY/FOW_SIZE;if(personaY<0)gy-=1;
+
+//			for(int radius = 0;radius<=((size+1));radius++){
+//				fillCircle(personaX, personaY, (radius)*16, Civilization.FOW_LOSTSIGHT);
+//			}
+			for(int radius = 4; radius < size + 3; radius++){
+				replaceCircle(personaX, personaY, radius*FOW_SIZE, FOW_VISIBLE, FOW_LOSTSIGHT);
+			}
+			Point personaCenter = new Point(personaX, personaY);
+			for(int radius = 0; radius < size; radius++){
+				fillCircle(personaCenter.getX(),personaCenter.getY(), radius*FOW_SIZE, FOW_VISIBLE);
+			}
+//			for (Point tgt : getCircle(gx, gy, (size))){
+//
+//				//setFOWValue(tgt.getX()*16, tgt.getY()*16, FOW_VISIBLE);
+//				see2(new Point(personaX, personaY), new Point(tgt.getX() * FOW_SIZE, tgt.getY() * FOW_SIZE));
+//			}
+		}
+
+		for(Building b : buildings){
+			int size = 10;
+			int buildingX = b.getX() + (int)(b.getWidth()/2);
+			int buildingY = b.getY() + (int)(b.getHeight()/2);
+			for(int radius = 0; radius < size; radius++){
+				fillCircle(buildingX, buildingY, radius*FOW_SIZE, FOW_VISIBLE);
+			}
+		}
+	}
+	public void updateVisible(Land land){
+		updateVisible(land, personas);
+	}
+
+	private void see2(Point start, Point tgt){
+		Point point = new Point(start.getX(), start.getY());
+		float initialDistance = (float)Maths.dist(start, tgt) - (FOW_SIZE*4);
+//		makeVisible(point.getX(), point.getY(), FOW_VISIBLE);
+		float xPos = point.getX();
+		float yPos = point.getY();
+		int speed = 1;
+		float dx = (-((xPos-tgt.getX()) / initialDistance) * speed);
+		float dy = (-((yPos-tgt.getY()) / initialDistance) * speed);
+		int steps = 1;
+//		DO_LOOP:do{
+//			xPos += dx;
+//			yPos += dy;
+//			steps++;
+//			point = new Point((int)xPos, (int)yPos);
+//			makeVisible(point.getX(), point.getY(), FOW_VISIBLE);
+//			if(!Demigods.getEngine().getActiveLand().getPassable(point.getX(), point.getY())){
+//				try{
+//					if(Demigods.getEngine().getActiveLand().getTile(point.getX(), point.getY()) == Tiles.OVERWORLD_STONE){
+//						steps++;
+//						continue  DO_LOOP;
+//					}
+//					if(Demigods.getEngine().getActiveLand().getTile(point.getX(), point.getY()) == Tiles.WATER)continue  DO_LOOP;
+//				}
+//				catch (NullPointerException e){
+//					break DO_LOOP;
+//				}
+//				break;
+//			}
+//		}
+//		//while(Maths.dist(start, point) < initialDistance);
+//		while(steps < initialDistance);
+	}
+	private void see(Point start, Point tgt){
+		Point point = new Point(start.getX(), start.getY());
+		float initialDistance = (float)Maths.dist(start, tgt) - FOW_SIZE;
+//		makeVisible(point.getX(), point.getY(), FOW_VISIBLE);
+		float dx = tgt.getX() - start.getX();
+		float dy = tgt.getY() - start.getY();
+		float dydx = dy/dx;
+		if(Math.abs(dx) < 2.2)dydx = Math.copySign(.1f, dydx);
+
+		float dxdt = dx/initialDistance;
+		float dydt = dy/initialDistance;
+
+//		if(dydx < 1 && dydx > 0)dydx = 1;
+//		else if(dydx > -1 && dydx > 0)dydx = 1;
+		if(dx <= 0)dydx*=-1;
+		float xPos = point.getX();
+		float yPos = point.getY();
+//		DO_LOOP:do{
+//			yPos += dydx;
+//			if(dx > 1){
+//				point = new Point(point.getX()+1, (int)yPos);
+//			}
+//			else if(dx < -1){
+//				point = new Point(point.getX()-1, (int)yPos);
+//			}
+//			else{
+//				point = new Point(point.getX(), (int)yPos);
+//			}
+//			makeVisible(point.getX(), point.getY(), FOW_VISIBLE);
+//			if(!Demigods.getEngine().getActiveLand().getPassable(point.getX(), point.getY())){
+//				try{
+//					if(Demigods.getEngine().getActiveLand().getTile(point.getX(), point.getY()) == Tiles.WATER)continue  DO_LOOP;
+//				}
+//				catch (NullPointerException e){
+//					break DO_LOOP;
+//				}
+//				break;
+//			}
+//		}
+//		while(Maths.dist(start, point) < initialDistance);
+	}
+//TODO: Make this run a lot quicker, probably by making it use the same circle algorithm.
+	public void loseSight(Land land){
+		for (Persona p : personas){
+			int size = VIEW_RADIUS + 5;
+			int personaX = p.getCharacter().getX();
+			int personaY = p.getCharacter().getY();
+
+//			int gx = personaX/FOW_SIZE;if(personaX<0)gx-=1;
+//			int gy = personaY/FOW_SIZE;if(personaY<0)gy-=1;
+
+			for(int radius = 4; radius < size; radius++){
+				replaceCircle(personaX, personaY, radius*FOW_SIZE, FOW_LOSTSIGHT, FOW_SEEN);
+			}
+
+		}
+	}
+
+
+//	private void setFOWValue(int x, int y, int value){
+//		try{
+//			if(Demigods.getEngine().getActiveLand().getFogOfWar(x, y) != FOW_PERMAVISION)
+//			Demigods.getEngine().getActiveLand().setFogOfWar(x, y, value);
+//		}catch(NullPointerException e){
+//			//do nothing. Setting the fow of a map that isn't loaded isn't going to work.
+//		}
+//	}
+//	private void makeVisible(int x, int y, int value){
+//		try{
+//			if(Demigods.getEngine().getActiveLand().getFogOfWar(x, y) != FOW_PERMAVISION)
+//				Demigods.getEngine().getActiveLand().setFogOfWar(x, y, value);
+//
+//		}catch (NullPointerException e){
+//		}
+//	}
+//	private void replaceFOWValue(int x, int y, int value, int newValue){
+//		try{
+//			if(Demigods.getEngine().getActiveLand().getFogOfWar(x, y) == value)
+//				Demigods.getEngine().getActiveLand().setFogOfWar(x, y, newValue);
+//		}catch (NullPointerException e){
+//
+//		}
+//	}
+	private void fillCircle(int x0, int y0, int radius, int value){
+		int f = 1 - radius;
+		int ddF_x = 1;
+		int ddF_y = -2 * radius;
+		int x = 0;
+		int y = radius;
+
+//		setFOWValue(x0, y0 + radius, value);
+//		setFOWValue(x0, y0 - radius, value);
+//		setFOWValue(x0 + radius, y0, value);
+//		setFOWValue(x0 - radius, y0, value);
+
+		while(x < y)
+		{
+			// ddF_x == 2 * x + 1;
+			// ddF_y == -2 * y;
+			// f == x*x + y*y - radius*radius + 2*x - y + 1;
+			if(f >= 0)
+			{
+				y--;
+				ddF_y += 2;
+				f += ddF_y;
+			}
+			x++;
+			ddF_x += 2;
+			f += ddF_x;
+//			setFOWValue(x0 + x, y0 + y, value);
+//			setFOWValue(x0 - x, y0 + y, value);
+//			setFOWValue(x0 + x, y0 - y, value);
+//			setFOWValue(x0 - x, y0 - y, value);
+//			setFOWValue(x0 + y, y0 + x, value);
+//			setFOWValue(x0 - y, y0 + x, value);
+//			setFOWValue(x0 + y, y0 - x, value);
+//			setFOWValue(x0 - y, y0 - x, value);
+		}
+	}
+	private void replaceCircle(int x0, int y0, int radius, int oldValue, int value){
+		int f = 1 - radius;
+		int ddF_x = 1;
+		int ddF_y = -2 * radius;
+		int x = 0;
+		int y = radius;
+
+//		replaceFOWValue(x0, y0 + radius, oldValue, value);
+//		replaceFOWValue(x0, y0 - radius, oldValue, value);
+//		replaceFOWValue(x0 + radius, y0, oldValue, value);
+//		replaceFOWValue(x0 - radius, y0, oldValue, value);
+
+		while(x < y)
+		{
+			// ddF_x == 2 * x + 1;
+			// ddF_y == -2 * y;
+			// f == x*x + y*y - radius*radius + 2*x - y + 1;
+			if(f >= 0)
+			{
+				y--;
+				ddF_y += 2;
+				f += ddF_y;
+			}
+			x++;
+			ddF_x += 2;
+			f += ddF_x;
+//			replaceFOWValue(x0 + x, y0 + y, oldValue, value);
+//			replaceFOWValue(x0 - x, y0 + y, oldValue, value);
+//			replaceFOWValue(x0 + x, y0 - y, oldValue, value);
+//			replaceFOWValue(x0 - x, y0 - y, oldValue, value);
+//			replaceFOWValue(x0 + y, y0 + x, oldValue, value);
+//			replaceFOWValue(x0 - y, y0 + x, oldValue, value);
+//			replaceFOWValue(x0 + y, y0 - x, oldValue, value);
+//			replaceFOWValue(x0 - y, y0 - x, oldValue, value);
+		}
+	}
+
+
+	private ArrayList<Point> getCircle(int x0, int y0, int radius){
+		ArrayList<Point> list = new ArrayList<Point>();
+		int f = 1 - radius;
+		int ddF_x = 1;
+		int ddF_y = -2 * radius;
+		int x = 0;
+		int y = radius;
+
+		list.add(new Point(x0, y0 + radius));
+		list.add(new Point(x0, y0 - radius));
+		list.add(new Point(x0 + radius, y0));
+		list.add(new Point(x0 - radius, y0));
+
+		while(x < y)
+		{
+			// ddF_x == 2 * x + 1;
+			// ddF_y == -2 * y;
+			// f == x*x + y*y - radius*radius + 2*x - y + 1;
+			if(f >= 0)
+			{
+				y--;
+				ddF_y += 2;
+				f += ddF_y;
+			}
+			x++;
+			ddF_x += 2;
+			f += ddF_x;
+			list.add(new Point(x0 + x, y0 + y));
+			list.add(new Point(x0 - x, y0 + y));
+			list.add(new Point(x0 + x, y0 - y));
+			list.add(new Point(x0 - x, y0 - y));
+			list.add(new Point(x0 + y, y0 + x));
+			list.add(new Point(x0 - y, y0 + x));
+			list.add(new Point(x0 + y, y0 - x));
+			list.add(new Point(x0 - y, y0 - x));
+		}
+		return list;
+	}
+
+//	public void updateVisible(GameArea area){
+//		int[][] fogOfWar = area.getFogOfWar();
+//
+//		for (Persona p : personas){
+//			int size = 20;
+//			for (int r = p.GX() - size; r < p.GX()+size; r++)for (int c = p.GY() - size; c < p.GY() + size; c++) {
+//				try{
+//					if(Maths.dist(p.GX(), r, p.GY(), c) < 18){
+//						fogOfWar[r][c] = 2;
+//					}
+//					else if (fogOfWar[r][c] == 2) {
+//						fogOfWar[r][c] = 1;
+//					}
+//				}catch (ArrayIndexOutOfBoundsException e){}
+//			}
+//		}
+//		for (Building b : buildings){
+//			int startx = b.getGX() + b.getGridSize()/2;
+//			int starty = b.getGY() + b.getGridSize()/2;
+//
+//			int size = 20 + b.getGridSize()/2;
+//			for (int r = startx-size; r < startx+size; r++)for (int c = starty - size; c < starty + size; c++) {
+//				try{
+//					if(Maths.dist(startx, r, starty, c) < 18){
+//						fogOfWar[r][c] = 2;
+//					}
+//				}catch (ArrayIndexOutOfBoundsException e){}
+//			}
+//		}
+//
+//	}
+//
+//	public void updateVisible(Map area){
+//		int[][] fogOfWar = area.getFogOfWar();
+//
+//		for (Persona p : personas){
+//			if(!p.getCharacter().isInMap(area))continue;
+//			int size = 20;
+//			for (int r = p.GX() - size; r < p.GX()+size; r++)for (int c = p.GY() - size; c < p.GY() + size; c++) {
+//				try{
+//					if (fogOfWar[r][c] == 2) {
+//						fogOfWar[r][c] = 1;
+//					}
+//				}catch (ArrayIndexOutOfBoundsException e){}
+//			}
+//		}
+//		for (Building b : buildings){
+//			int startx = b.getGX() + b.getGridSize()/2;
+//			int starty = b.getGY() + b.getGridSize()/2;
+//
+//			int size = 20 + b.getGridSize()/2;
+//			for (int r = startx-size; r < startx+size; r++)for (int c = starty - size; c < starty + size; c++) {
+//				try{
+//					if(Maths.dist(startx, r, starty, c) < 18){
+//						fogOfWar[r][c] = 2;
+//					}
+//				}catch (ArrayIndexOutOfBoundsException e){}
+//			}
+//		}
+//
+//		for (Persona p : personas){
+//			if(!p.getCharacter().isInMap(area))continue;
+//			int size = 20;
+//			for (int r = p.GX() - size; r < p.GX()+size; r++)for (int c = p.GY() - size; c < p.GY() + size; c++) {
+//				try{
+//					if(Maths.dist(p.GX(), r, p.GY(), c) < 18){
+//						fogOfWar[r][c] = 2;
+//					}
+//				}catch (ArrayIndexOutOfBoundsException e){}
+//			}
+//		}
+//
+//	}
+
+}

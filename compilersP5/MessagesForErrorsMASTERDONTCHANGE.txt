@@ -1,0 +1,58 @@
+--Attempt to write a function
+    eg "cout << f;"
+--Attempt to write a struct name
+    eg "cout << P;"
+--Attempt to write a struct variable
+    eg "cout << p;"
+--Attempt to write void
+    eg "cout << foo();"
+--Attempt to read a function
+    eg "cin >> f;"
+--Attempt to read a struct name
+    eg "cin >> P;"
+--Attempt to read a struct variable
+    eg "cin >> p;"
+--Attempt to call a non-function
+    eg "x();"
+    DO NOT TYPE CHECK PARAMETERS
+--Function call with wrong number of args
+    DO NOT TYPE CHECK PARAMETERS    
+--Type of actual does not match type of formal
+    ONLY CHECK IF # ARGS IS CORRECT
+    GIVE AN ERROR MESSAGE FOR EACH ARGUMENT
+--Missing return value
+    ie having a null exp in a return stmt
+
+--Return with a value in a void function
+
+--Bad return value
+    ie the wrong type
+--Aritmetic operator applied to non-numeric operand
+    INCLUDES ++ and --
+    IF BOTH ARE WRONG, TWO ERRORS ARE REPORTED
+
+--Relational operator applied to non-numeric operand
+
+--Logical operator applied to non-bool operand
+
+--Non-bool expression used as an if condition
+
+--Non-bool expression used as a while condition
+
+--Type mismatch
+    FOR == AND !=
+
+
+--Equality operator applied to void functions
+
+--Equality operator applied to functions
+
+--Equality operator applied to struct names
+
+--Equality operator applied to struct variables
+
+--Function assigment
+
+--Struct name assignment
+
+--Struct variable assignment 

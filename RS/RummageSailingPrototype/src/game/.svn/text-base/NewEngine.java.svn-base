@@ -1,0 +1,735 @@
+package game;
+
+import conditions.Condition;
+import effects.Effect;
+import enchantments.Enchantment;
+import entities.Entity;
+import entities.buildings.Building;
+import entities.characters.Human;
+import entities.characters.personas.Persona;
+import entities.characters.Character;
+import entities.characters.personas.Player;
+import entities.interactables.Interactable;
+import entities.interactables.ResourceTile;
+import entities.particles.DroppedItem;
+import entities.tiles.Tiles;
+import gameAreas.*;
+import gui.BuildingPanel;
+import gui.NewInventoryPanel;
+import gui.SkillLevelUpGUI;
+import items.*;
+import items.foundations.Foundation;
+import items.foundations.HouseFoundation;
+import items.foundations.WoodenBarricadeFoundation;
+import org.lwjgl.util.Point;
+import org.lwjgl.util.Rectangle;
+import skills.Jump;
+import skills.Lunge;
+import util.*;
+
+import java.util.ArrayList;
+import java.util.Random;
+
+public class NewEngine {
+
+	private NewGameArea area;
+	private transient NewGameScreen gameScreen;
+
+
+	private int seed = (int)(Math.random() * 1000000);
+	public final Random rand = new Random(seed);
+
+	/** The Player*/
+	private Player player;
+
+	/** the ID of the next area.*/
+	private int next_ID = 0;
+
+	private boolean paused = false;
+	protected boolean lmbPressed = false;
+	protected boolean rmbPressed = false;
+
+	private int screenW = Demigods.DEFAULT_SCREEN_WIDTH;
+	private int screenH = Demigods.DEFAULT_SCREEN_HEIGHT;
+
+	private Rectangle screen = new Rectangle(0,0,screenW,screenH);
+
+	private float zoomFactor = 1.0f;
+	public float getZoom(){return zoomFactor;}
+	public void setZoom(float z) {
+		zoomFactor = z;
+		screen.setWidth((int)(screenW/zoomFactor));
+		screen.setHeight((int)(screenH/zoomFactor));
+	}
+	private boolean wPressed = false;
+	public void setWPressed(boolean pressed){this.wPressed = pressed;}
+	private boolean aPressed = false;
+	public void setAPressed(boolean pressed){this.aPressed = pressed;}
+	private boolean sPressed = false;
+	public void setSPressed(boolean pressed){this.sPressed = pressed;}
+	private boolean dPressed = false;
+	public void setDPressed(boolean pressed){this.dPressed = pressed;}
+
+	public NewGameArea getActiveArea() {return this.area;}
+	public Rectangle getScreen(){
+		return screen;
+	}
+	public Player getPlayer() {return this.player;}
+	public NewGameScreen getGameScreen() {return gameScreen;}
+	public void setGameScreen(NewGameScreen gs) {this.gameScreen = gs;}
+	public boolean isPaused() {return paused;}
+
+	public int getNextID(){return next_ID++;}
+
+
+	private ArrayList<Persona> toBeRemovedPersonas = new ArrayList<Persona>();
+
+	//TODO: Constructor
+
+	public NewEngine(){
+
+
+		this.area = new OverworldArea(
+				rand,
+				NewGameArea.DEFAULT_SIZE,
+				this.getNextID(),
+				0
+		);
+
+
+		player = new Player();
+		player.setCharacter(new Human(area.getSize()/2, area.getSize()/2));
+		player.getCharacter().setXY((area.getSize()/2)*16,(area.getSize()/2)*16);
+
+//		player.getCharacter().setSkill(0, new Burn());
+//		player.getCharacter().setSkill(1, new QuickStrike());
+//		player.getCharacter().setSkill(2, new ShiftBlast());
+//		player.getCharacter().setSkill(3, new Icicle());
+//		player.getCharacter().setSkill(4, new DarkTendril());
+//		player.getCharacter().getSkills().add(new Smash());
+//		player.getCharacter().getSkills().add(new Flamethrower());
+		player.getCharacter().getSkills().add(new Jump());
+		player.getCharacter().getSkills().add(new Lunge());
+//		player.getCharacter().getSkills().add(new ThunderStorm());
+
+		while(player.getCharacter().getLvl()<1){
+			player.getCharacter().addXP(50);
+
+		}
+		player.setTeam(Constants.PLAYERTEAM);
+		area.getPersonas().add(player);
+
+//		player.getCharacter().setEquippedItem(new SteelDagger());
+//		player.getCharacter().getEquippedItem().equip(player.getCharacter());
+
+		this.setZoom(2.0f);
+		this.centerScreen(player);
+
+		addAllItems();
+		//addSomeItems();
+//		addAllWeapons();
+
+//		makeRadiusGrass(player.getCharacter().getAbsX(), player.getCharacter().getAbsY(), 10*16);
+
+
+	}
+
+
+	//TODO: update()
+	public void update(){
+		if(paused)return;
+		mouseInteractionTick();
+
+		Character playerCharacter = player.getCharacter();
+		if(wPressed){
+			playerCharacter.setDY(-playerCharacter.BASE_SPEED);
+		}
+		if(sPressed){
+			playerCharacter.setDY(playerCharacter.BASE_SPEED);
+		}
+		if(aPressed){
+			playerCharacter.setDX(-playerCharacter.BASE_SPEED);
+		}
+		if(dPressed){
+			playerCharacter.setDX(playerCharacter.BASE_SPEED);
+		}
+
+		area.getPersonas().reseed();
+
+		for (Persona p : area.getPersonas().getPersonas()) {
+			TODO:p.moveAI(this);
+		}
+		for (Persona p : area.getPersonas().getPersonas()) {
+			p.getCharacter().tick(area);
+
+			if(p.getEquippedItem() != null)
+				p.getEquippedItem().tick();
+
+			for(ArrayList<Condition> conditions : p.getCharacter().getConditionMap().values()){
+				ArrayList<Condition> tempc = new ArrayList<Condition>();
+
+				for(Condition c : conditions){
+					//TODO:c.tick(this);
+					if (c.isOff()) {
+						c.turnOff();
+						tempc.add(c);
+					}
+					if(p.getCharacter().getHP() <= 0){
+						if(c.getSrc()!=null){
+							Experience.grantXP(p.getCharacter(), c.getSrc());
+						}
+						toBeRemovedPersonas.add(p);
+					}
+				}
+				for (Condition c : tempc) {
+					conditions.remove(c);
+				}
+			}
+		}
+		for (DroppedItem i : area.getDroppedItems()) {
+			i.tick();
+		}
+
+		ArrayList<Effect> tempE = new ArrayList<Effect>();
+
+		for (Effect effect : area.getEffects()) {
+			tempE.add(effect.tick(this));
+		}
+		for (Effect effect : tempE) {
+			area.getEffects().remove(effect);
+		}
+		for(Persona p : toBeRemovedPersonas){
+			area.getPersonas().remove(p);
+		}
+		toBeRemovedPersonas.clear();
+		area.tick(this);
+
+		this.centerScreen(player);
+
+	}
+	//TODO: mouseInteractionTick()
+	public void mouseInteractionTick() {
+		long duration = System.nanoTime();
+
+
+		if(!rmbPressed && !lmbPressed)return;
+
+		Point mouse = gameScreen.getMouse();
+		int mouseX = mouse.getX();
+		int mouseY = mouse.getY();
+
+		playerSelectedTick();
+
+
+
+	}
+	public void playerSelectedTick() {
+		Point mouse = gameScreen.getMouse();
+		Character pc = player.getCharacter();
+		FIRST_HALF: {
+			if (lmbPressed&&!gameScreen.haveToRelease) {
+				if(pc.getAnimation() == null){
+					if (pc.getSkillReadied()) {
+						if (pc.getReadiedSkill().use(player.getCharacter(), mouse)) {
+							pc.setSkillReadied(false);
+							pc.setReadiedSkill(null);
+
+						}
+						break FIRST_HALF;
+					}
+
+					if (player.getEquippedItem().isOffCooldown()) {
+
+						// Attack
+						//playerAttack(new Point(mouseGridX, mouseGridY));
+						playerAttack(mouse);
+						// Harvest
+						playerHarvest(mouse);
+
+						// Build
+						playerBuild(mouse);
+
+
+						// set on CD
+						player.getEquippedItem().use();
+						player.getCharacter().setSwinging(true);
+					}
+				}
+
+
+			}
+		}
+		SECOND_HALF: if (lmbPressed) {
+			if(!gameScreen.haveToRelease)
+				for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+					if (panel.click(gameScreen.getMouse())) {
+						break SECOND_HALF;
+					}
+				}
+			//TODO:if(!gameScreen.haveToRelease || mouseTicker % 10 == 0){
+			//TODO:	// Interact
+			//TODO:	playerInteract();
+			//TODO:}
+		}
+
+	}
+	private void playerHarvest(Point mouse) {
+		int mx = mouse.getX();
+		int my = mouse.getY();
+
+		int gx = mx/16, gy = my/16;
+		ResourceTile tile = null;
+
+		try{
+			tile = area.getResources()[mx/16][my/16];
+
+		}catch (IndexOutOfBoundsException e){
+			return;
+		}
+		if (tile != null) {
+			if (Maths.dist(mouse, player.getCharacter().getLoc()) < (5*16)) {
+
+				if (area.getMap()[gx][gy] == Tiles.TREE||
+						area.getMap()[gx][gy] == Tiles.CACTUS) {
+					gameScreen.getParticles().add(
+							Particle.newTreeParticle(
+									mx/16,
+									my/16,
+									(int)(Math.random() * 4 - 2),
+									(int)(Math.random() * 2) + 1)
+					);
+				}
+				Audio.playHit();
+
+				if (tile.isAppropriateTool(player.getEquippedItem())) {
+					Tool tool = (Tool)player.getEquippedItem();
+
+					Item i = tile.harvest(tool.getHarvestRate());
+					if(i!=null){
+						DroppedItem item = new DroppedItem(mx, my, i);
+
+						item.setDXDYDZ((float)((Math.random()<.5?1:-1)*(Math.random()*1.5+1)),(float)((Math.random()<.5?1:-1)*(Math.random()*1.5+1)), (float)(Math.random()*3 + 3));
+						area.getDroppedItems().add(item);
+					}
+
+				} else {
+					if (tile.getScraps() > 0) {
+						tile.setScraps(tile.getScraps() - 1);
+						Item i = new Scraps();
+						DroppedItem item = new DroppedItem(mx, my, i);
+						item.setDXDYDZ((float)((Math.random()<.5?1:-1)*(Math.random()*1.5+1)),(float)((Math.random()<.5?1:-1)*(Math.random()*1.5+1)), (float)(Math.random()*3 + 3));
+
+						//item.setAbsoluteLoc(Demigods.getMouseAbsolute());
+						area.getDroppedItems().add(item);
+					}
+				}
+
+				tileEmptyCheck(area, tile, mx/16, my/16);
+			}
+
+		}
+
+	}
+	public static void tileEmptyCheck(NewGameArea area, ResourceTile tile, int gx, int gy){
+		if (!tile.hasResources()) {
+			if (area.getMap()[gx][gy] == Tiles.TREE) {
+				area.getPassable()[gx][gy] = true;
+				area.getMap()[gx][gy] =  Tiles.STUMP;
+				area.getResources()[gx][gy] = null;
+			}else if (area.getMap()[gx][gy] == Tiles.CACTUS) {
+				area.getPassable()[gx][gy] = true;
+				area.getMap()[gx][gy] =  Tiles.SAND;
+				area.getResources()[gx][gy] = null;
+			} else if (area.getMap()[gx][gy] == Tiles.OVERWORLD_STONE) {
+				area.getPassable()[gx][gy] = true;
+				area.getMap()[gx][gy] =  Tiles.DIRT;
+				area.getResources()[gx][gy] = null;
+			}
+		}
+	}
+	private void playerBuild(Point mouse) {
+
+		Point playerPoint = player.getCharacter().getLoc();
+		int mAX = mouse.getX();
+		int mAY = mouse.getY();
+		int mgx = mAX/16;
+		int mgy = mAY/16;
+
+
+		//if (Maths.dist(playerPoint.getX(), mousePoint.getX(), playerPoint.getY(), mousePoint.getY()) < (10*16)) {
+			if (player.getEquippedItem().isFoundation()) {
+				Foundation i = (Foundation)player.getEquippedItem();
+				boolean placeable = true;
+				Rectangle potentialBounds = i.getPotentialBounds(mgx, mgy);
+
+				int potentialGWidth = potentialBounds.getWidth();
+				int potentialGHeight = potentialBounds.getHeight();
+
+				potentialBounds = new Rectangle(
+						potentialBounds.getX()*16,
+						potentialBounds.getY()*16,
+						potentialBounds.getWidth()*16,
+						potentialBounds.getHeight()*16
+				);
+
+
+
+
+				if (placeable) {
+					if(area.getPersonas().get(potentialBounds).size() >0){
+						placeable = false;
+					}
+					for (int r = 0; r < potentialGWidth; ++r) {
+						for (int c = 0; c < potentialGHeight; ++c) {
+							if(area.getEntrances()[mgx + r][mgy + c] != null){
+								placeable = false;break;
+							}
+							if(!area.getPassable()[mgx + r][mgy + c]){
+								placeable = false;break;
+							}
+
+						}
+					}
+				}
+
+				if (placeable) {
+					Building b = i.build(mgx, mgy);
+					b.setTeam(player.getTeam());
+					if(!i.buildingIsPassable()){
+						for (int r = 0; r < potentialGWidth; ++r) {
+							for (int c = 0; c < potentialGHeight; ++c) {
+								area.getPassable()[mgx + r][mgy + c] = false;
+							}
+						}
+					}
+					// activeArea.getCollidables().add(b);
+					area.getTickables().add(b);
+
+
+					area.getInteractables()[mgx+potentialGWidth - 1][mgy + potentialGHeight - 1] = b;
+
+					player.removeItem(player.getSelectedItemNum());
+					if (b.isEnterable()) {
+						Point entranceAdjustment = b.getEntranceAdjustment();
+						int entranceAbsX = b.getX() + (entranceAdjustment.getX()*16);
+						int entranceAbsY = b.getY() + (entranceAdjustment.getY()*16);
+
+
+//						Entrance entrance = new Entrance(b.getEntranceCoordinates()[0], b.getEntranceCoordinates()[1], true, getNextInteriorID());
+//						int entranceAbsGX = b.getEntranceCoordinates()[0];
+//						entranceAbsGX += (b.getBaseMap().getX() * Map.SIZE);
+//						int entranceAbsGY= b.getEntranceCoordinates()[1];
+//						entranceAbsGY += (b.getBaseMap().getY() * Map.SIZE);
+//						if(b.getBaseMap().getX() < 0)entranceAbsGX +=1;
+//						if(b.getBaseMap().getY() < 0)entranceAbsGY +=1;
+
+						Entrance entrance = new Entrance(0,0, true, getNextID());
+						entrance.setXY(entranceAbsX, entranceAbsY);
+
+
+						//entrance.setAbsoluteLoc(entranceAbsGX*16, entranceAbsGY*16);
+
+//						activeArea.setEntrance(entranceAbsX, entranceAbsY, entrance);
+						area.getEntrances()[entranceAbsX/16][entranceAbsY/16] = entrance;
+						//mouseMap.getEntrances()[entrance.getGX()][entrance.getGY()] = entrance;
+						Interior interior = i.getInterior(seed, entrance);
+						b.setEntrance(entrance);
+						entrance.setTargetAbsLoc(interior.getEntrancePoint());
+						SaveManager.saveInterior(interior);
+					}
+
+					gameScreen.haveToRelease = true;
+
+				}
+
+
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+			} else if (player.getEquippedItem().isRoad() && area.isBase()) {
+				//System.out.println("    Engine.playerBuild - Road");
+				Road road = (Road)player.getEquippedItem();
+				int roadID = road.getID();
+
+				if(area.getMap()[mgx][mgy] != roadID){
+
+					makeRoad(mAX-16, mAY-16, roadID);
+					makeRoad(mAX-16, mAY, roadID);
+					makeRoad(mAX-16, mAY+16, roadID);
+
+					makeRoad(mAX, mAY-16, roadID);
+					makeRoad(mAX, mAY, roadID);
+					makeRoad(mAX, mAY+16, roadID);
+
+					makeRoad(mAX+16, mAY-16, road.getID());
+					makeRoad(mAX+16, mAY, road.getID());
+					makeRoad(mAX+16, mAY+16, road.getID());
+
+					player.removeItem(player.getSelectedItemNum());
+
+				}
+			} else if (player.getEquippedItem().isInteractableItem()){
+//					&& !activeArea.toString().equalsIgnoreCase("overworld")
+//					&& !activeArea.toString().equalsIgnoreCase("dungeon")
+//					&& !activeArea.toString().equalsIgnoreCase("Crafting hut")
+//					&& !activeArea.toString().equalsIgnoreCase("Workshop")
+//					&& !activeArea.toString().equalsIgnoreCase("smithy")) {
+				InteractableItem item = (InteractableItem)player.getEquippedItem();
+
+				System.out.println(
+						item
+				);
+				if (area.getInteractables()[mgx][mgy] == null) {
+					if (area.getPassable()[mgx][mgy]) {
+						Interactable interactable = item.getItem(mAX, mAY);
+						area.getInteractables()[mgx][mgy] =  interactable;
+						player.removeItem(player.getSelectedItemNum());
+						gameScreen.haveToRelease = true;
+					}
+				}
+			}
+
+		//}
+	}
+	private void playerInteract() {
+
+		Point mouseAbsolute = Demigods.getMouseAbsolute();
+		int max = mouseAbsolute.getX();
+		int may = mouseAbsolute.getY();
+
+		boolean interacted = false;
+
+//		for(int dx = -10; dx < 10; dx++){
+//			for(int dy = -10; dy < 10; dy++){
+//				if(activeArea.getInteractable())
+//			}
+//		}
+
+		for (int r = - 10; r < 10; ++r) {
+			for (int c = - 10; c < 10; ++c) {
+
+				if(area.getInteractables()[max/16 + r][may/16 + c] != null){
+
+					Interactable interactable = area.getInteractables()[max/16 + r][may/16 + c];
+//					System.out.println(
+//							interactable
+//					);
+					int mgrx = max/16;
+					int mgry = may/16;
+					if(max < 0 && mgrx == 0)mgrx -= 1;
+					if(may < 0 && mgry == 0)mgry -= 1;
+
+					if(interactable.getAbsHitbox().contains(mouseAbsolute)){
+						for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+							panel.getHost().setShowingGUI(false);
+						}
+						gameScreen.getBuildingPanels().clear();
+						//TODO:interactable.interact(this);
+						interacted = true;
+						if(interactable.needToRelease())gameScreen.haveToRelease = true;
+					}
+
+//					if(interactable.getAbsHitbox().intersects(new Rectangle(mgrx, mgry, 1, 1))){
+//
+//					}
+				}
+
+			}
+
+		}
+
+		if (!interacted) {
+			for (BuildingPanel panel : gameScreen.getBuildingPanels()) {
+				panel.getHost().setShowingGUI(false);
+			}
+			gameScreen.getBuildingPanels().clear();
+		}
+
+	}
+	private void addAllItems() {
+		player.getCharacter().setInventory(new Inventory(10000));
+		// *
+		try {
+			for (int i = 0; i < Constants.allTheItems.length; i++) {
+				String name = Constants.allTheItems[i].toString();
+				if (!name.equalsIgnoreCase("nullitem") &&
+						!name.equalsIgnoreCase("Foundation") &&
+						!name.equalsIgnoreCase("Empty Hands") &&
+						!name.equalsIgnoreCase("lightsource") &&
+						!name.equalsIgnoreCase("road"))
+
+					player.getCharacter().getInventory().addItem(Constants.allTheItems[i]);
+			}
+
+		} catch (DoodleScapeException e) {}
+		// */
+	}
+	private void addAllWeapons() {
+		// *
+		try {
+			for (int i = 0; i < Constants.allTheItems.length; i++) {
+				String name = Constants.allTheItems[i].toString();
+				if (!name.equalsIgnoreCase("nullitem") && !name.equalsIgnoreCase("Foundation") && !name.equalsIgnoreCase("Empty Hands") && !name.equalsIgnoreCase("lightsource") && !name.equalsIgnoreCase("interactable") && !name.equalsIgnoreCase("road")) {
+					if (!name.contains("Foundation") && !name.contains("Bar") && !name.contains("Ore") && !name.contains("ore"))
+
+						player.getCharacter().getInventory().addItem(Constants.allTheItems[i]);
+				}
+
+			}
+
+		} catch (DoodleScapeException e) {}
+		// */
+	}
+	private void addSomeItems() {
+//		player.getCharacter().setInventory(new Inventory(10000));
+		try {
+//
+
+
+
+
+			player.getCharacter().getInventory().addItem(new WoodenBow());
+
+			addItem(new ChestItem(), 2);
+			addItem(new WoodenBow(), 1);
+			addItem(new Wood(), 4000);
+			addItem(new Arrow(), 4000);
+//			addItem(new Stone(), 4000);
+			addItem(new WoodenBarricadeFoundation(), 400);
+			addItem(new HouseFoundation(), 10);
+			addItem(new StoneGreatsword(), 1);
+			addItem(new GodSword(), 1);
+			addItem(new ChronomancerBlade(), 1);
+//			addItem(new BronzeChest(), 1);
+//			addItem(new BronzeHat(), 1);
+//			addItem(new BronzeLegs(), 1);
+//			addItem(new SteelAxe(), 1);
+
+			SteelAxe axe = new SteelAxe();
+			Enchantment.addEnchantment(axe, "Poisoned");
+			//Enchantment.addEnchantment(axe, "Mighty");
+			player.getCharacter().getInventory().addItem(axe);
+
+		} catch (DoodleScapeException e) {
+//
+		}
+	}
+	private void playerAttack(Point mouse){
+		player.getCharacter().getEquippedItem().attack(mouse);
+	}
+	private void addItem(Item item, int quantity){
+		try {
+			for(int i = 0; i < quantity; ++i){
+				player.getCharacter().getInventory().addItem(Constants.getItemFromString(item.toString()));
+			}
+
+		} catch (DoodleScapeException e) {
+		}
+	}
+	public void addBuildingGUI(BuildingPanel panel) {
+		gameScreen.getBuildingPanels().add(panel);
+	}
+
+	public void add(Particle p) {
+		gameScreen.getParticles().add(p);
+	}
+
+
+	private void makeRoad(int x, int y, int type){
+		try {
+
+			if(area.getPassable()[x/16][y/16]){
+				area.getMap()[x/16][y/16] = type;
+			}
+		} catch (NullPointerException e) {
+			System.out.println("Engine.makeRoad() caught a NPE");
+		}
+
+	}
+	public void add(Item item, Entity entity, float dx, float dy, float dz){
+		DroppedItem newItem = new DroppedItem(item);
+		newItem.setDX(dx);
+		newItem.setDY(dy);
+		newItem.setDZ(dz);
+		newItem.setXY(entity.getX(), entity.getY());
+
+				area.getDroppedItems().add(newItem);
+
+	}
+	public void add(Effect effect){
+		area.getEffects().add(effect);
+	}public void add(DroppedItem item){
+		area.getDroppedItems().add(item);
+	}
+
+
+	public void centerScreen(Persona p){
+		centerScreen(p.getCharacter().getX(), p.getCharacter().getY());
+	}
+	public void centerScreen(int x, int y){
+		screen.setBounds(x-(screen.getWidth()/2), y-(screen.getHeight()/2), screen.getWidth(), screen.getHeight());
+	}
+	public void pause() {
+		paused = true;
+	}
+
+	public void unpause() {
+		paused = false;
+	}
+	public void toggleInventory(){
+		if(gameScreen.getGuiPanel()instanceof NewInventoryPanel){
+			gameScreen.closeGUIPanel();
+//			this.unpause();
+		}else{
+			gameScreen.setGuiPanel(new NewInventoryPanel());
+//			this.pause();
+		}
+
+	}
+	/**return true iff closed a GUI*/
+	public boolean closeGUI(){
+		boolean returnValue = false;
+		if(gameScreen.getGuiPanel() != null)returnValue = true;
+		gameScreen.setGuiPanel(null);
+		return returnValue;
+	}
+	public void togglePause(){
+		this.paused = !this.paused;
+	}
+	public void addToBeRemoved(Persona p){
+		this.toBeRemovedPersonas.add(p);
+	}
+	public void toggleSkillLevelUpPanel(Character character){
+		if(this.gameScreen.getGuiPanel() == null){
+			SkillLevelUpGUI panel = new SkillLevelUpGUI(this, character);
+			this.gameScreen.setGuiPanel(panel);
+		}
+		else{
+			gameScreen.closeGUIPanel();
+		}
+	}
+
+	public static void bounce(Character src, Character tgt) {
+		int dx = 0;
+		int dy = 0;
+		if(src.getX() > tgt.getX())dx = -1;
+		else if(src.getX() == tgt.getX())dx = 0;
+		else if(src.getX() < tgt.getX())dx = 1;
+
+		if(src.getY() > tgt.getY())dy = -1;
+		else if(src.getY() == tgt.getY())dy = 0;
+		else if(src.getY() < tgt.getY())dy = 1;
+
+		if(dx==0&&dy==0){
+			dx = -2;
+			dy = -2;
+		}
+		tgt.setKnockback(new Knockback(tgt, dx, dy));
+	}
+
+}

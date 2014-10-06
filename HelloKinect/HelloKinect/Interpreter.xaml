@@ -1,0 +1,16 @@
+﻿<Window x:Class="HelloKinect.Interpreter"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Interpreter" Height="300" Width="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="76*"/>
+            <ColumnDefinition Width="43*"/>
+            <ColumnDefinition Width="174*"/>
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="InterpreterInput" Grid.ColumnSpan="2" HorizontalAlignment="Left" Height="92" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="152" Margin="0,25,0,0" Grid.Column="1" TextChanged="TextBox_TextChanged_1" AcceptsReturn="True" AcceptsTab="True"/>
+        <Button Content="Button" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Grid.ColumnSpan="2" Grid.Column="1" Margin="26,145,0,0" Click="OnExecution"/>
+        <TextBox x:Name="txtConsole" Grid.Column="1" HorizontalAlignment="Left" Height="57" Margin="10,189,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="124" Grid.ColumnSpan="2" TextChanged="txtConsole_TextChanged" AcceptsReturn="True" AcceptsTab="True"/>
+
+    </Grid>
+</Window>

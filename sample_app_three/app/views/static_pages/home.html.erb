@@ -1,0 +1,16 @@
+<% if signed_in? %>
+      <section>
+        <%= render 'shared/user_info' %>
+      </section>
+      <section>
+        <%= render 'shared/stats' %>
+      </section>
+
+      
+  <%= render 'shared/home_signed_in' %>
+<% else %>
+
+  <%= render 'shared/home_not_signed_in' %>
+<% end %>
+
+

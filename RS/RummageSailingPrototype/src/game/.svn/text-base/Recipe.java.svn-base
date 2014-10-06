@@ -1,0 +1,53 @@
+package game;
+
+import util.Constants;
+import gameAreas.GameArea;
+import items.Item;
+
+public class Recipe {
+	private int[] resources = new int[Constants.blankItemIntArray.length];
+	private int product;
+	private boolean[] craftableAreas = new boolean[Constants.areaStrings.length];
+	private boolean craftable;
+
+	public int getResourceCount(Item i) {
+		return resources[Constants.getItemID(i)];
+	}
+
+	public void setResourceCount(Item i, int amount) {
+		resources[Constants.getItemID(i)] = amount;
+	}
+
+	public String getProductName() {
+		return Constants.allTheItems[product].toString();
+	}
+
+	public void setProduct(Item p) {
+		product = Constants.getItemID(p);
+	}
+
+	public Item getProduct() {
+		return Constants.allTheItems[product];
+	}
+
+	public boolean isCraftable() {
+		return craftable;
+	}
+
+	public void setCraftable(boolean c) {
+		craftable = c;
+	}
+
+	public void setCraftableArea(GameArea area, boolean possible) {
+		craftableAreas[Constants.getAreaID(area)] = possible;
+	}
+
+	public boolean isCraftableArea(GameArea area) {
+		for (int i = 0; i < craftableAreas.length; ++i) {
+			if (craftableAreas[i]) {
+				if (area.toString().equalsIgnoreCase(Constants.areaStrings[i])) { return true; }
+			}
+		}
+		return false;
+	}
+}

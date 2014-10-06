@@ -1,0 +1,361 @@
+package game;
+
+import java.awt.event.*;
+import java.util.ArrayList;
+import javax.swing.Timer;
+import java.io.*;
+
+import org.newdawn.slick.*;
+import org.newdawn.slick.state.*;
+
+import util.*;
+import util.Font;
+
+public class TitleScreen extends BasicGameState {
+
+    public static class LogoScreen extends BasicGameState {
+
+        public void init(GameContainer arg0, StateBasedGame arg1) throws SlickException {
+            Images.init();
+	        arg0.setMouseCursor(Images.cursor, 1, 1);
+            Audio.init();
+            introClipTimer.start();
+        }
+
+        public void render(GameContainer arg0, StateBasedGame arg1, Graphics arg2) throws SlickException {
+            Images.companyLogo.draw(0f, -220f, 1056f, 1000f);
+        }
+
+        public void update(GameContainer arg0, StateBasedGame arg1, int arg2) throws SlickException {
+        }
+
+        public int getID() {
+            return -1;
+        }
+    }
+
+    public enum Step {
+        MENU, NEWGAME, LOADING, LOADGAME, SETTINGS, PLAY, NEW_PLAYER_0, NEW_PLAYER_1
+    }
+
+    private Input input;
+    private static Step step = Step.MENU;
+    //private static char[] gameNameChars = new char[0];
+	private static String saveNameString = "";
+    private int fullLoad = 14590000;
+    private double loadStep = 0;
+    private String loadingMessage;
+    private int cursorPosition = 0;
+    private static ArrayList<File> saves = new ArrayList<File>();
+    private boolean newGameSelected = false;
+    private boolean loadGameSelected = false;
+    private boolean settingsSelected = false;
+    private boolean quitGameSelected = false;
+    private boolean startGameSelected = false;
+    private boolean cancelSelected = false;
+    private boolean[] savesSelected = new boolean[9];
+    private int selectedSaveNumber = -1;
+//    private static boolean cursorOn = false;
+	private static BasicTextInputBox saveName = new BasicTextInputBox();
+	private static BasicTextInputBox playerName = new BasicTextInputBox();
+
+	public void reset(){
+		saveName.clear();
+		newGameSelected = false;
+		loadGameSelected = false;
+		settingsSelected = false;
+		quitGameSelected = false;
+		startGameSelected = false;
+	}
+
+    private void resetSelectionBooleans() {
+        newGameSelected = false;
+        loadGameSelected = false;
+        settingsSelected = false;
+        quitGameSelected = false;
+        startGameSelected = false;
+        cancelSelected = false;
+        for (int i = 0; i < 9; ++i) savesSelected[i] = false;
+    }
+
+    public static String getGameName() {
+        return (saveNameString.equalsIgnoreCase(""))?
+		            saveName.getString()
+		            :saveNameString;
+    }
+
+    public static void initSaves() {
+	    File file = new File("sav/");
+        for (File f : file.listFiles()) {
+            if (f.isDirectory()) {
+                saves.add(f);
+            }
+        }
+    }
+
+    private static Timer introClipTimer = new Timer(3000, new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            step(Step.MENU);
+            Demigods.enterMenu();
+        }
+    });
+
+
+
+    private void incrementCursorPosition() {
+        ++cursorPosition;
+    }
+
+    private void decrementCursorPosition() {
+        --cursorPosition;
+    }
+
+    public static void step(Step s) {
+        step = s;
+	    saveName.disable();
+        if (step == Step.MENU) {
+            introClipTimer.stop();
+        } else if (step == Step.NEWGAME) {
+//            cursorTick.start();
+	        saveName.enable();
+        } else if (step == Step.LOADGAME) {
+            initSaves();
+        } else if (step == Step.LOADING) {
+            Demigods.startLoaderThread(getGameName());
+        } else if(step == Step.PLAY){
+	        //Load list of players
+        }else if(step == Step.NEW_PLAYER_0){
+	        //prep for a new player screen
+
+        }else if(step == Step.NEW_PLAYER_1){
+	        //Load list of players
+        }
+    }
+
+    public TitleScreen(Step s) {
+        step = s;
+    }
+
+    public void incrementLoadingBar(String message) {
+        ++loadStep;
+        loadingMessage = message;
+    }
+
+    public void incrementLoadingBar() {
+        ++loadStep;
+    }
+
+    public void keyPressed(int key, char c) {
+        if (step == Step.NEWGAME) {
+	        saveName.keyPressed(key, c);
+            if (saveName.size() != 0) {
+                if (key == Input.KEY_ENTER) step(Step.LOADING);
+
+	            //get the text from the box
+
+            }
+            if (key == Input.KEY_ESCAPE) step(Step.MENU);
+        } else if (step == Step.LOADGAME) {
+            if (selectedSaveNumber >= 0) {
+                if (key == Input.KEY_ENTER) {
+                    String gameName = saves.get(selectedSaveNumber).toString().substring(saves.get(selectedSaveNumber).toString().indexOf("/") + 1);
+                    saveNameString = saveName.getString();
+//	                gameNameChars = gameName.toCharArray();
+                    Demigods.setNewGame(false);
+                    step(Step.LOADING);
+                }
+            }
+            if (key == Input.KEY_ESCAPE) step(Step.MENU);
+            else if (key == Input.KEY_UP) {
+                if (selectedSaveNumber == -1) selectedSaveNumber = 0;
+                else if (selectedSaveNumber > 0) selectedSaveNumber--;
+            } else if (key == Input.KEY_DOWN) {
+                if (selectedSaveNumber < 9) selectedSaveNumber++;
+            }
+        }
+    }
+
+
+
+    public void mousePressed(int button, int x, int y) {
+        if (button == 0) {
+            if (step == Step.MENU) {
+                if (x > 300 && x < 530 && y > 225 && y < 265) {
+                    step(Step.NEWGAME);
+                } else if (x > 300 && x < 550 && y > 275 && y < 315) {
+                    step(Step.LOADGAME);
+                } else if (x > 300 && x < 500 && y > 325 && y < 365) {
+
+                } else if (x > 300 && x < 530 && y > 375 && y < 415) {
+                    System.exit(0);
+                }
+
+            } else if (step == Step.NEWGAME) {
+                if (x > 198 && x < 878 && y > 110 && y < 150) {
+	                saveName.enable();
+                } else if (x > 200 && x < 465 && y > 160 && y < 200) step(Step.LOADING);
+                else if (x > 200 && x < 375 && y > 210 && y < 250) step(Step.MENU);
+                else {
+                    saveName.disable();
+                }
+            } else if (step == Step.LOADGAME) {
+                try {
+                    if (x > 200 && x < 796 && y > 90 && y < 125 && saves.get(0).toString() != "")
+                        selectedSaveNumber = 0;
+                    else if (x > 200 && x < 796 && y > 130 && y < 165 && saves.get(1).toString() != "")
+                        selectedSaveNumber = 1;
+                    else if (x > 200 && x < 796 && y > 170 && y < 205 && saves.get(2).toString() != "")
+                        selectedSaveNumber = 2;
+                    else if (x > 200 && x < 796 && y > 210 && y < 245 && saves.get(3).toString() != "")
+                        selectedSaveNumber = 3;
+                    else if (x > 200 && x < 796 && y > 250 && y < 285 && saves.get(4).toString() != "")
+                        selectedSaveNumber = 4;
+                    else if (x > 200 && x < 796 && y > 290 && y < 325 && saves.get(5).toString() != "")
+                        selectedSaveNumber = 5;
+                    else if (x > 200 && x < 796 && y > 330 && y < 365 && saves.get(6).toString() != "")
+                        selectedSaveNumber = 6;
+                    else if (x > 200 && x < 796 && y > 370 && y < 405 && saves.get(7).toString() != "")
+                        selectedSaveNumber = 7;
+                    else if (x > 200 && x < 796 && y > 410 && y < 445 && saves.get(8).toString() != "")
+                        selectedSaveNumber = 8;
+                    else if (x > 200 && x < 465 && y > 465 && y < 500) {
+                        saveNameString = saves.get(selectedSaveNumber).toString().substring(saves.get(selectedSaveNumber).toString().indexOf("/") + 1);
+
+                        Demigods.setNewGame(false);
+                        step(Step.LOADING);
+                    } else if (x > 200 && x < 375 && y > 510 && y < 545) step(Step.MENU);
+                    else {
+                        selectedSaveNumber = -1;
+                    }
+                } catch (IndexOutOfBoundsException ee) {
+                }
+            }
+        }
+    }
+
+    public void init(GameContainer gc, StateBasedGame game) throws SlickException {
+        input = new Input(600);
+        input.addListener(this);
+    }
+
+    public void render(GameContainer arg0, StateBasedGame arg1, Graphics g) throws SlickException {
+        Color darkGrey = new Color(87, 87, 87);
+        Color menuTextColor;
+        g.setColor(Color.white);
+        g.fillRect(0, 0, 1060, 610);
+        if (step == Step.MENU) {
+            Images.menuScreen.draw(0f, 0f, 1056f, 600f, null);
+            g.setColor(Color.black);
+            menuTextColor = newGameSelected ? Color.white : Color.black;
+            Font.drawDkNorthumbriaString("NEW GAME", 300, 225, 30, menuTextColor);
+            menuTextColor = loadGameSelected ? Color.white : Color.black;
+            Font.drawDkNorthumbriaString("LOAD GAME", 300, 275, 30, menuTextColor);
+            menuTextColor = settingsSelected ? Color.white : Color.black;
+            Font.drawDkNorthumbriaString("SETTINGS", 300, 325, 30, menuTextColor);
+            menuTextColor = quitGameSelected ? Color.white : Color.black;
+            Font.drawDkNorthumbriaString("QUIT GAME", 300, 375, 30, menuTextColor);
+            Font.drawDkNorthumbriaString("Demigods", 10, 10, 50, menuTextColor, Font.FontType.RENDERED);
+        } else if (step == Step.NEWGAME) {
+            g.setColor(darkGrey);
+            g.fillRect(0, 0, 1056, 600);
+            Font.drawTriniganFgString("Name:", 200, 75, 16, Color.black);
+            g.setColor(Color.black);
+	        saveName.draw(198, 110, 680, 40, g);
+//            g.drawRect(198, 110, 680, 40);
+//            g.setColor(Color.white);
+//            g.fillRect(199, 111, 679, 39);
+//            if (cursorOn) g.setColor(Color.black);
+//            g.fillRect(203 + 22 * cursorPosition, 146, 25, 2);
+//            for (int i = 0; i < gameNameChars.length; ++i) {
+//                Font.drawNewGameInputFontString(Character.toString(gameNameChars[i]), 203 + 22 * i, 115);
+//            }
+            if (startGameSelected) menuTextColor = Color.white;
+            else menuTextColor = Color.black;
+            Font.drawDkNorthumbriaString("START GAME", 200, 160, 30, menuTextColor);
+            if (cancelSelected) menuTextColor = Color.white;
+            else menuTextColor = Color.black;
+            Font.drawDkNorthumbriaString("CANCEL", 200, 210, 30, menuTextColor);
+        } else if (step == Step.LOADGAME) {
+            g.setColor(darkGrey);
+            g.fillRect(0, 0, 1056, 600);
+            Font.drawDkNorthumbriaString("LOAD GAME", 200, 35, 30, Color.black);
+            g.setColor(Color.black);
+            g.drawRect(196, 85, 600, 375);
+            for (int i = 0; i < 9; ++i) {
+                if (savesSelected[i] || selectedSaveNumber == i) menuTextColor = Color.white;
+                else menuTextColor = Color.black;
+                String s;
+                try {
+                    s = saves.get(i).getName();
+                } catch (IndexOutOfBoundsException e) {
+                    break;
+                }
+                Font.drawDkNorthumbriaString(s, 200, 85 + 40 * i, 30, menuTextColor);
+            }
+            if (startGameSelected) menuTextColor = Color.white;
+            else menuTextColor = Color.black;
+            Font.drawDkNorthumbriaString("START GAME", 200, 460, 30, menuTextColor);
+            if (cancelSelected) menuTextColor = Color.white;
+            else menuTextColor = Color.black;
+            Font.drawDkNorthumbriaString("CANCEL", 200, 505, 30, menuTextColor);
+        } else if (step == Step.LOADING) {
+            g.setColor(darkGrey);
+            g.fillRect(0, 0, 1056, 600);
+            g.setColor(Color.black);
+            g.fillRect(273, 250, 500, 50);
+            g.setColor(Color.white);
+            g.fillRect(278, 255, 490, 40);
+            g.setColor(new Color(0, 255, 0));
+            g.fillRect(278, 255, (int) (490 * (loadStep / fullLoad)), 40);
+            g.setColor(new Color(0, 150, 0));
+            g.fillRect(278, 280, (int) (490 * (loadStep / fullLoad)), 15);
+            try {
+                Font.drawTriniganFgString(loadingMessage, 273, 325, 16, Color.white);
+            } catch (NullPointerException e) {
+            }
+        }
+    }
+
+    public void update(GameContainer gc, StateBasedGame game, int delta) throws SlickException {
+        if (step == Step.MENU) {
+            int x = input.getMouseX(), y = input.getMouseY();
+            resetSelectionBooleans();
+            if (x > 300 && x < 530 && y > 225 && y < 265) {
+                newGameSelected = true;
+            } else if (x > 300 && x < 550 && y > 275 && y < 315) {
+                loadGameSelected = true;
+            } else if (x > 300 && x < 500 && y > 325 && y < 365) {
+                settingsSelected = true;
+            } else if (x > 300 && x < 530 && y > 375 && y < 415) {
+                quitGameSelected = true;
+            } else {
+                resetSelectionBooleans();
+            }
+        } else if (step == Step.NEWGAME) {
+            int x = input.getMouseX(), y = input.getMouseY();
+            resetSelectionBooleans();
+            if (x > 200 && x < 465 && y > 160 && y < 200) startGameSelected = true;
+            else if (x > 200 && x < 375 && y > 210 && y < 250) cancelSelected = true;
+            else resetSelectionBooleans();
+        } else if (step == Step.LOADGAME) {
+            int x = input.getMouseX(), y = input.getMouseY();
+            resetSelectionBooleans();
+            if (x > 200 && x < 796 && y > 90 && y < 125) savesSelected[0] = true;
+            else if (x > 200 && x < 796 && y > 130 && y < 165) savesSelected[1] = true;
+            else if (x > 200 && x < 796 && y > 170 && y < 205) savesSelected[2] = true;
+            else if (x > 200 && x < 796 && y > 210 && y < 245) savesSelected[3] = true;
+            else if (x > 200 && x < 796 && y > 250 && y < 285) savesSelected[4] = true;
+            else if (x > 200 && x < 796 && y > 290 && y < 325) savesSelected[5] = true;
+            else if (x > 200 && x < 796 && y > 330 && y < 365) savesSelected[6] = true;
+            else if (x > 200 && x < 796 && y > 370 && y < 405) savesSelected[7] = true;
+            else if (x > 200 && x < 796 && y > 410 && y < 445) savesSelected[8] = true;
+            else if (x > 200 && x < 465 && y > 465 && y < 500) startGameSelected = true;
+            else if (x > 200 && x < 375 && y > 510 && y < 545) cancelSelected = true;
+            else resetSelectionBooleans();
+        }
+    }
+
+    public int getID() {
+        return 0;
+    }
+}

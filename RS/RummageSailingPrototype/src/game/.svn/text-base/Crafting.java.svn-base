@@ -1,0 +1,383 @@
+package game;
+
+import java.util.ArrayList;
+
+import items.foundations.*;
+import util.Constants;
+
+import items.*;
+import gameAreas.*;
+import util.UncheckedDoodleScapeException;
+
+public class Crafting {
+
+	private static Inventory inventory;
+	private static Recipe wood;
+	private static Recipe stick;
+	private static Recipe woodPickAxe;
+	private static Recipe woodAxe;
+	private static Recipe hut;
+	private static Recipe craftingHut;
+	private static Recipe house;
+	private static Recipe workshop;
+	private static Recipe cobbleRoad;
+	private static Recipe stoneAxe;
+	private static Recipe stoneSpear;
+	private static Recipe boneSword;
+	private static Recipe bonePickAxe;
+	private static Recipe boneAxe;
+	private static Recipe boneSpear;
+	private static Recipe smithy;
+	private static Recipe woodenBarricade;
+	private static Recipe resourcePile;
+	private static Recipe bronzeBar;
+	private static Recipe bronzeBar2;
+	private static Recipe bronzeSword;
+	private static Recipe bronzePickAxe;
+	private static Recipe bronzeAxe;
+	private static Recipe bronzeSpear;
+	private static Recipe ironBar;
+	private static Recipe ironBar2;
+	private static Recipe ironSword;
+	private static Recipe ironPickAxe;
+	private static Recipe ironAxe;
+	private static Recipe ironSpear;
+	private static Recipe chest;
+	private static Recipe villageCenter;
+	private static Recipe mineshaft;
+	private static Recipe torch;
+
+	private static ArrayList<Recipe> recipes;
+	private static ArrayList<Recipe> craftableRecipes;
+	private static GameArea area;
+
+	public static int getRecipesLength() {
+		return recipes.size();
+	}
+
+	public static Recipe getRecipe(int i) {
+		return recipes.get(i);
+	}
+
+	public static void init(Inventory inv, GameArea a) {
+		inventory = inv;
+		area = a;
+		recipes = new ArrayList<Recipe>();
+		craftableRecipes = new ArrayList<Recipe>();
+
+		wood = new Recipe();
+		wood.setResourceCount(new Scraps(), 3);
+		for (int i = 0; i < Constants.gameAreaBooleans.length; ++i) {
+			wood.setCraftableArea(Constants.allTheAreas[i], true);
+		}
+		wood.setProduct(new Wood());
+		recipes.add(wood);
+
+		stick = new Recipe();
+		stick.setResourceCount(new Wood(), 1);
+		addCraftableAreas(0, 0, stick);
+		stick.setProduct(new Stick());
+		recipes.add(stick);
+
+		woodPickAxe = new Recipe();
+		woodPickAxe.setResourceCount(new Wood(), 2);
+		woodPickAxe.setResourceCount(new Stick(), 3);
+		for (int i = 0; i < Constants.gameAreaBooleans.length; ++i) {
+			woodPickAxe.setCraftableArea(Constants.allTheAreas[i], true);
+		}
+		woodPickAxe.setProduct(new WoodPick());
+		recipes.add(woodPickAxe);
+
+		woodAxe = new Recipe();
+		woodAxe.setResourceCount(new Wood(), 3);
+		woodAxe.setResourceCount(new Stick(), 2);
+		addCraftableAreas(0, 0, woodAxe);
+		woodAxe.setProduct(new WoodAxe());
+		recipes.add(woodAxe);
+
+		torch = new Recipe();
+		torch.setResourceCount(new Coal(), 1);
+		torch.setResourceCount(new Stick(), 1);
+		addCraftableAreas(0, 0, torch);
+		torch.setProduct(new TorchItem());
+		recipes.add(torch);
+
+		hut = new Recipe();
+		hut.setResourceCount(new Wood(), 2);
+		for (int i = 0; i < Constants.gameAreaBooleans.length; ++i) {
+			hut.setCraftableArea(Constants.allTheAreas[i], true);
+		}
+		hut.setProduct(new HutFoundation());
+		recipes.add(hut);
+
+		craftingHut = new Recipe();
+		craftingHut.setResourceCount(new Wood(), 3);
+		for (int i = 0; i < Constants.gameAreaBooleans.length; ++i) {
+			craftingHut.setCraftableArea(Constants.allTheAreas[i], true);
+		}
+		craftingHut.setProduct(new CraftingHutFoundation());
+		recipes.add(craftingHut);
+
+		cobbleRoad = new Recipe();
+		cobbleRoad.setResourceCount(new Stone(), 3);
+		addCraftableAreas(1, 0, cobbleRoad);
+		cobbleRoad.setProduct(new CobbleRoad());
+		recipes.add(cobbleRoad);
+
+		house = new Recipe();
+		house.setResourceCount(new Wood(), 7);
+		house.setCraftableArea(new CraftingHutInterior(), true);
+		house.setCraftableArea(new WorkshopInterior(), true);
+		house.setProduct(new HouseFoundation());
+		recipes.add(house);
+
+		workshop = new Recipe();
+		workshop.setResourceCount(new Wood(), 5);
+		workshop.setResourceCount(new Stone(), 5);
+		workshop.setCraftableArea(new CraftingHutInterior(), true);
+		workshop.setCraftableArea(new WorkshopInterior(), true);
+		workshop.setProduct(new WorkshopFoundation());
+		recipes.add(workshop);
+
+		stoneAxe = new Recipe();
+		stoneAxe.setResourceCount(new Stone(), 3);
+		stoneAxe.setResourceCount(new Stick(), 2);
+		stoneAxe.setCraftableArea(new CraftingHutInterior(), true);
+		stoneAxe.setCraftableArea(new WorkshopInterior(), true);
+		stoneAxe.setProduct(new StoneAxe());
+		recipes.add(stoneAxe);
+
+		stoneSpear = new Recipe();
+		stoneSpear.setResourceCount(new Stone(), 2);
+		stoneSpear.setResourceCount(new Stick(), 6);
+		stoneSpear.setCraftableArea(new CraftingHutInterior(), true);
+		stoneSpear.setCraftableArea(new WorkshopInterior(), true);
+		stoneSpear.setProduct(new StoneSpear());
+		recipes.add(stoneSpear);
+
+
+		/////////////////////
+		boneSword = new Recipe();
+		boneSword.setResourceCount(new Bone(), 8);
+		boneSword.setResourceCount(new Stick(), 1);
+		addCraftableAreas(1, 0, boneSword);
+		boneSword.setProduct(new BoneSword());
+		recipes.add(boneSword);
+
+		bonePickAxe = new Recipe();
+		bonePickAxe.setResourceCount(new Bone(), 8);
+		bonePickAxe.setResourceCount(new Stick(), 3);
+		addCraftableAreas(1, 0, bonePickAxe);
+		bonePickAxe.setProduct(new BonePick());
+		recipes.add(bonePickAxe);
+
+		boneAxe = new Recipe();
+		boneAxe.setResourceCount(new Bone(), 12);
+		boneAxe.setResourceCount(new Stick(), 2);
+		addCraftableAreas(1, 0, boneAxe);
+		boneAxe.setProduct(new BoneAxe());
+		recipes.add(boneAxe);
+
+		boneSpear = new Recipe();
+		boneSpear.setResourceCount(new Bone(), 4);
+		boneSpear.setResourceCount(new Stick(), 6);
+		addCraftableAreas(1, 0, boneSpear);
+		boneSpear.setProduct(new BoneSpear());
+		recipes.add(boneSpear);
+
+		/////////////////////
+		smithy = new Recipe();
+		smithy.setResourceCount(new Stone(), 5);
+		smithy.setCraftableArea(new WorkshopInterior(), true);
+		smithy.setProduct(new SmithyFoundation());
+		recipes.add(smithy);
+
+
+		woodenBarricade = new Recipe();
+		woodenBarricade.setResourceCount(new Wood(), 5);
+		woodenBarricade.setCraftableArea(new WorkshopInterior(), true);
+		woodenBarricade.setProduct(new WoodenBarricadeFoundation());
+		recipes.add(woodenBarricade);
+
+		resourcePile = new Recipe();
+		resourcePile.setResourceCount(new Wood(), 5);
+		addCraftableAreas(1, 0, resourcePile);
+		resourcePile.setProduct(new ResourcePileFoundation());
+		recipes.add(resourcePile);
+		/////////////////////
+		bronzeBar = new Recipe();
+		bronzeBar.setResourceCount(new Wood(), 3);
+		bronzeBar.setResourceCount(new CopperOre(), 1);
+		bronzeBar.setResourceCount(new TinOre(), 1);
+		addCraftableAreas(2, 0, bronzeBar);
+		bronzeBar.setProduct(new BronzeBar());
+		recipes.add(bronzeBar);
+
+		bronzeBar2 = new Recipe();
+		bronzeBar2.setResourceCount(new Coal(), 1);
+		bronzeBar2.setResourceCount(new CopperOre(), 1);
+		bronzeBar2.setResourceCount(new TinOre(), 1);
+		addCraftableAreas(2, 0, bronzeBar2);
+		bronzeBar2.setProduct(new BronzeBar());
+		recipes.add(bronzeBar2);
+
+		bronzeSword = new Recipe();
+		bronzeSword.setResourceCount(new BronzeBar(), 2);
+		bronzeSword.setResourceCount(new Stick(), 1);
+		addCraftableAreas(2, 0, bronzeSword);
+		bronzeSword.setProduct(new BronzeSword());
+		recipes.add(bronzeSword);
+
+		bronzePickAxe = new Recipe();
+		bronzePickAxe.setResourceCount(new BronzeBar(), 2);
+		bronzePickAxe.setResourceCount(new Stick(), 3);
+		addCraftableAreas(2, 0, bronzePickAxe);
+		bronzePickAxe.setProduct(new BronzePick());
+		recipes.add(bronzePickAxe);
+
+		bronzeAxe = new Recipe();
+		bronzeAxe.setResourceCount(new BronzeBar(), 3);
+		bronzeAxe.setResourceCount(new Stick(), 2);
+		addCraftableAreas(2, 0, bronzeAxe);
+		bronzeAxe.setProduct(new BronzeAxe());
+		recipes.add(bronzeAxe);
+
+		bronzeSpear = new Recipe();
+		bronzeSpear.setResourceCount(new BronzeBar(), 2);
+		bronzeSpear.setResourceCount(new Stick(), 6);
+		addCraftableAreas(2, 0, bronzeSpear);
+		bronzeSpear.setProduct(new BronzeSpear());
+		recipes.add(bronzeSpear);
+		///////////////
+
+		/////////////////////
+		ironBar = new Recipe();
+		ironBar.setResourceCount(new Wood(), 3);
+		ironBar.setResourceCount(new IronOre(), 1);
+		addCraftableAreas(2, 0, ironBar);
+		ironBar.setProduct(new IronBar());
+		recipes.add(ironBar);
+
+		ironBar2 = new Recipe();
+		ironBar2.setResourceCount(new Coal(), 1);
+		ironBar2.setResourceCount(new IronOre(), 1);
+		addCraftableAreas(2, 0, ironBar2);
+		ironBar2.setProduct(new IronBar());
+		recipes.add(ironBar2);
+
+		ironSword = new Recipe();
+		ironSword.setResourceCount(new IronBar(), 2);
+		ironSword.setResourceCount(new Stick(), 1);
+		addCraftableAreas(2, 0, ironSword);
+		ironSword.setProduct(new IronSword());
+		recipes.add(ironSword);
+
+		ironPickAxe = new Recipe();
+		ironPickAxe.setResourceCount(new IronBar(), 2);
+		ironPickAxe.setResourceCount(new Stick(), 3);
+		addCraftableAreas(2, 0, ironPickAxe);
+		ironPickAxe.setProduct(new IronPick());
+		recipes.add(ironPickAxe);
+
+		ironAxe = new Recipe();
+		ironAxe.setResourceCount(new IronBar(), 3);
+		ironAxe.setResourceCount(new Stick(), 2);
+		addCraftableAreas(2, 0, ironAxe);
+		ironAxe.setProduct(new IronAxe());
+		recipes.add(ironAxe);
+
+		ironSpear = new Recipe();
+		ironSpear.setResourceCount(new IronBar(), 2);
+		ironSpear.setResourceCount(new Stick(), 6);
+		addCraftableAreas(2, 0, ironSpear);
+		ironSpear.setProduct(new IronSpear());
+		recipes.add(ironSpear);
+		///////////////
+		chest = new Recipe();
+		chest.setResourceCount(new Wood(), 15);
+		addCraftableAreas(1, 0, chest);
+		chest.setProduct(new ChestItem());
+		recipes.add(chest);
+
+		villageCenter = new Recipe();
+		villageCenter.setResourceCount(new Wood(), 20);
+		villageCenter.setResourceCount(new Stone(), 10);
+		//villageCenter.setResourceCount(new Food(), 150);//Yes, it should require food. Lots.
+		addCraftableAreas(1, 1, villageCenter);
+		villageCenter.setProduct(new VillageCenterFoundation());
+		recipes.add(villageCenter);
+
+		mineshaft = new Recipe();
+		mineshaft.setResourceCount(new Wood(), 5);
+		mineshaft.setResourceCount(new Stone(), 5);
+		addCraftableAreas(1, 1, mineshaft);
+		mineshaft.setProduct(new StoneQuarryFoundation());
+		recipes.add(mineshaft);
+	}
+
+	public static boolean hasEnoughResources(Recipe r) {
+		inventory = Demigods.getPlayerInventory();
+		for (Item i : Constants.allTheItems) {
+			if (r.getResourceCount(i) > 0) {
+				try {
+					if (r.getResourceCount(i) > inventory.getItemCount(i)) { return false; }
+				} catch (UncheckedDoodleScapeException e) {
+					System.err.println(e.getMessage());
+				}
+			}
+		}
+		return true;
+	}
+
+	public static ArrayList<Recipe> getCraftableRecipes() {
+		craftableRecipes.clear();
+		area = Demigods.getPlayerArea();
+		for (Recipe r : recipes) {
+			if (r.isCraftableArea(area)) {
+				r.setCraftable(true);
+				craftableRecipes.add(r);
+			} else {
+				r.setCraftable(false);
+			}
+		}
+		return craftableRecipes;
+	}
+
+	/*
+	 * How to use this method: specify the "option":
+	  * 0 - All areas with an ID >=
+	 * minValue
+	  * 1 - Craftinghut/workshop type buildings starting with the
+	 * minValue of that tier. EX: (1, 0, r) is for all crafting areas, (1, 1, r)
+	 * is for all starting with the workshop
+	 * 2 - Smithing areas, like 1 (2, 0,
+	 * r) is for all starting with smithy.
+	 *
+	 * and add more as needed.
+	 */
+	public static void addCraftableAreas(int option, int minValue, Recipe r) {
+		if (option == 0) {
+			for (int i = minValue; i < Constants.gameAreaBooleans.length; ++i) {
+				r.setCraftableArea(Constants.allTheAreas[i], true);
+			}
+		}
+		if (option == 1) {
+			switch (minValue) {
+			case 0:
+				r.setCraftableArea(new CraftingHutInterior(), true);
+			case 1:
+				r.setCraftableArea(new WorkshopInterior(), true);
+			default:
+				break;
+			}
+		}
+		if (option == 2) {
+			switch (minValue) {
+			case 0:
+				r.setCraftableArea(new SmithyInterior(), true);
+			default:
+				break;
+			}
+		}
+	}
+}

@@ -1,0 +1,19 @@
+package game;
+import entities.characters.Character;
+import static util.Constants.*;
+
+public class Experience {
+
+	public static void grantXP(Character dead, Character killer){
+		//System.out.println("adding xp to " + killer + " from " + dead );
+		int levelDifference = dead.getLvl() - killer.getLvl();
+		if(levelDifference < 1)levelDifference = 1;
+		killer.addXP( (int)(dead.getExp() * (.1*levelDifference) ) + (10 * dead.getLvl()));
+
+//		if(killer.getExp() >= xpLevels[killer.getLvl()+1]){
+//		}
+
+	}
+
+
+}

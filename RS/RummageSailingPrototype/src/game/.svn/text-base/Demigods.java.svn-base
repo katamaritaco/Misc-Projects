@@ -1,0 +1,204 @@
+package game;
+
+import entities.characters.personas.Player;
+import game.TitleScreen.Step;
+import gameAreas.*;
+import org.lwjgl.util.Point;
+import org.newdawn.slick.*;
+import org.newdawn.slick.state.*;
+import util.SaveLoadQueue;
+
+import java.util.Random;
+
+public class Demigods extends StateBasedGame {
+
+    public static Demigods demigods;
+    public static final String GAME_VERSION = "v0.1";
+    private static final int TITLESCREEN = 0;
+    private static final int LOGO = -1;
+    private static final int GAME = 1;
+
+	public static final int DEFAULT_SCREEN_HEIGHT = 600;//1152x768 is nice too
+	public static final int	DEFAULT_SCREEN_WIDTH = 1056;
+
+    private static Engine engine;
+
+    private static SaveLoadQueue saveLoadQueue;
+
+    private static TitleScreen titleScreen;
+    private static TitleScreen.LogoScreen logoScreen;
+    private static GameScreen gameScreen;
+    private static boolean newGame = true;
+    private static String saveName;
+
+
+	private static NewEngine newEngine;
+	private static NewGameScreen newGameScreen;
+
+    public Demigods() throws SlickException {
+        super("Demigods: Adventures " + GAME_VERSION);
+        addState(titleScreen);
+        addState(logoScreen);
+    }
+
+    public static String getSaveName() {
+        return saveName;
+    }
+
+    public static boolean isNewGame() {
+        return newGame;
+    }
+
+    public static void setNewGame(boolean b) {
+        newGame = b;
+    }
+
+
+
+    public static void enterMenu() {
+        TitleScreen.step(step);
+        demigods.enterState(TITLESCREEN);
+    }
+
+    private static Thread loaderThread;
+
+    private static Step step = Step.MENU;
+    private static boolean gameStarted = false;
+
+    public static boolean isGameStarted() {
+        return gameStarted;
+    }
+
+    public static void main(String[] args) throws SlickException {
+        titleScreen = new TitleScreen(step);
+        logoScreen = new TitleScreen.LogoScreen();
+        demigods = new Demigods();
+        AppGameContainer app = new AppGameContainer(demigods);
+        app.setDisplayMode(Land.DEFAULT_SCREEN_WIDTH, Land.DEFAULT_SCREEN_HEIGHT, false);
+
+        //app.setVSync(true);//This here is keeping your fps down. it can be commented out for testing, but i think it needs to be on.
+        app.setTargetFrameRate(60);
+        app.setShowFPS(false);
+        demigods.enterState(LOGO);
+
+
+	    app.start();
+	    //app.
+    }
+
+    public static void startLoaderThread(String s) {
+        loaderThread = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    loadGame();
+                } catch (SlickException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        loaderThread.start();
+        saveName = s;
+    }
+
+    private static void loadGame() throws SlickException {
+        gameStarted = true;
+
+        init();
+
+//        Crafting.init(getPlayerInventory(), engine.getActiveLand().get(getPlayer().getMapLoc()));
+        demigods.addState(newGameScreen);
+        //gameScreen.init(demigods.getContainer(), demigods);
+        newGameScreen.init(demigods.getContainer(), demigods);
+        demigods.enterState(GAME);
+
+        loaderThread = null;
+
+        step = Step.MENU;
+    }
+
+    private static void init() throws SlickException {
+
+        if (newGame) SaveManager.createDirectory(Demigods.getSaveName());
+
+        gameScreen = new GameScreen();
+        if (newGame) engine = new Engine();
+        else engine = SaveManager.loadEngine(getSaveName());
+        engine.postInitialize();
+        titleScreen.incrementLoadingBar("Drawing the Minimap...");
+
+        saveLoadQueue = new SaveLoadQueue();
+        gameScreen.setEngine(engine);
+        engine.setGameScreen(gameScreen);
+
+        saveLoadQueue.setLand(engine.getActiveLand());
+
+
+	    if (newGame) SaveManager.createDirectory(Demigods.getSaveName());
+
+	    newGameScreen = new NewGameScreen();
+	    if (newGame) newEngine = new NewEngine();
+	    //else newEngine = SaveManager.loadEngine(getSaveName());
+
+	    titleScreen.incrementLoadingBar("Drawing the Minimap...");
+
+	    newGameScreen.setEngine(newEngine);
+	    newEngine.setGameScreen(newGameScreen);
+
+    }
+
+    public static void incrementLoadingBar(String message) {
+        titleScreen.incrementLoadingBar(message);
+    }
+
+    public static void incrementLoadingBar() {
+        titleScreen.incrementLoadingBar();
+    }
+
+
+//    public static Engine getEngine() {
+//        return engine;
+//    }
+	public static NewEngine getNewEngine() {
+        return newEngine;
+    }
+
+    public static Player getPlayer() {
+        return newEngine.getPlayer();
+    }
+
+    public static Inventory getPlayerInventory() {
+        return getPlayer().getCharacter().getInventory();
+    }
+
+    //	public static GameArea getActiveArea() {
+//		return engine.getActiveArea();
+//	}
+    public static Point getMouseAbsolute() {
+        return engine.getMouse();
+    }
+
+    public static float getZoom() {
+        return newEngine.getZoom();
+    }
+
+    public static SaveLoadQueue getSaveLoadQueue() {
+        return saveLoadQueue;
+    }
+
+    public static GameArea getPlayerArea() {
+        if (engine.getActiveLand().isOutside()) return engine.getActiveLand().getCenterMap();
+        else return engine.getActiveLand().get(0, 0);
+        //return  engine.getActiveLand().get(getPlayer().getMapLoc());
+    }
+
+    public void initStatesList(GameContainer gc) throws SlickException {
+    }
+
+    public static String getLoc(Point p) {
+        return "(" + p.getX() + ", " + p.getY() + ")";
+    }
+
+    public static Random getRand() {
+        return engine.rand;
+    }
+}

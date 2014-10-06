@@ -1,0 +1,64 @@
+10
+
+dir
+26
+svn+ssh://zadjii@65.26.254.57/var/svn/Demigods/InfDev/img
+svn+ssh://zadjii@65.26.254.57/var/svn/Demigods/InfDev
+
+
+
+2012-11-21T17:11:28.454379Z
+26
+zadjii
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4de54c02-41a6-42d3-865d-e23c5f8657ca
+
+_projects
+dir
+
+buildings
+dir
+
+characters
+dir
+
+effects
+dir
+
+items
+dir
+
+mainMenu
+dir
+
+panels
+dir
+
+runes
+dir
+
+skills
+dir
+
+spells
+dir
+
+statBars
+dir
+
+tiles
+dir
+

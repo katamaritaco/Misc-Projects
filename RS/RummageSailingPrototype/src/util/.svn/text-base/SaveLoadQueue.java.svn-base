@@ -1,0 +1,280 @@
+package util;
+
+import entities.characters.personas.Persona;
+import game.Demigods;
+import game.SaveManager;
+import gameAreas.Interior;
+import gameAreas.Land;
+import gameAreas.Map;
+import org.lwjgl.util.Point;
+
+import java.util.ArrayList;
+
+
+public class SaveLoadQueue {
+
+	public static final int SAVE = -1;
+	public static final int LOAD = 1;
+
+	private Land land;
+
+	private ArrayList<Point> areasStack = new ArrayList<Point>();
+	//these are the locations of the maps that will be saved/loaded
+
+	private ArrayList<Integer> commandsStack = new ArrayList<Integer>();
+	//these are the values that determine if a map should be loaded or saved
+
+	public void handleTop(){
+		if (areasStack.size() <= 0)return;
+		if(commandsStack.get(0) == SAVE){
+			//save the top location's map into memory.
+			saveTop();
+		}
+		else if (commandsStack.get(0) == LOAD) LOAD:{
+			//load the appropriate map into the location.
+			Point p = areasStack.get(0);
+			if(land.get(p.getX(), p.getY()) != null)break LOAD;
+			Map map;
+			try{
+				map = loadTop();
+			}catch (DoodleScapeException e ){
+				map = generateNewMap(areasStack.get(0));
+			}
+			if (map != null) land.addMap(map);
+		}
+		pop();
+	}
+	public void forceLoad(int x, int y){
+		forceLoad(new Point(x, y));
+	}
+	public void forceLoad(Point p){
+		if(land.get(p.getX(), p.getY()) != null)return;
+
+		System.out.println("        FORCE LOAD ATTEMPTED (" + p.getX() + ", " + p.getY() + ")");
+
+		Map map;
+		try{
+			map = loadMap(p);
+		}catch (DoodleScapeException e ){
+			map = generateNewMap(p);
+		}
+		if (map != null) land.addMap(map);
+
+		for (int i = 0; i < areasStack.size(); ++i){
+			if(areasStack.get(i).equals(p)){
+				areasStack.remove(i);
+				commandsStack.remove(i);
+				break;
+			}
+		}
+	}
+
+	public void put(Point p, int saveLoad){
+		commandsStack.add(saveLoad);
+		areasStack.add(p);
+	}
+	private void pop(){
+
+//		System.out.println(
+//				"Handled? a map at ("
+//						+ areasStack.get(0).getX() + ", "
+//						+ areasStack.get(0).getY() + ") with a command of "
+//				+ commandsStack.get(0)
+//		);
+		commandsStack.remove(0);
+		areasStack.remove(0);
+	}
+	private void saveTop(){
+		save(0);
+	}
+
+	private void save(int index){
+		Point p = areasStack.get(index);
+		//get the map at location p
+		//save it
+		//remove it from the HM
+		int x = p.getX();
+		int y = p.getY();
+		Map map = land.get(x, y);
+		ArrayList<Persona> personas = new ArrayList<Persona>();
+		for(Persona persona : land.getPersonas().getPersonas()){
+//			if(persona.toString().contains("Player"))
+//				System.out.println("Player iterated over");
+			if(!persona.toString().contains("Player")){
+				if(!land.isOutside()){
+					personas.add(persona);
+				}
+				else if(persona.getCharacter().getBaseMap().equals(p)){
+//				if(persona.toString().contains("Player"))
+//					System.out.println("Player added?");
+					personas.add(persona);
+				}
+			}
+
+		}
+		if (personas.size() != 0){
+			//System.out.println("Saving Personas");
+			SaveManager.savePersonas(personas, x, y);
+			//System.out.println("            Personas: " + land.getPersonas().size());
+			if(!land.isOutside()) System.out.println(personas.size());
+
+			for (Persona p1 : personas){
+//				Demigods.getEngine().unloadPerson(p1);
+			}
+			//System.out.println("            Unloaded Personas: " + personas.size());
+			//System.out.println("____________Saved Personas: " + personas.size() + ",  " + Demigods.getLoc(p) + ", " + personas);
+		}
+
+		if(map != null){
+			//System.out.println("Saving a Map " + Demigods.getLoc(p));
+			SaveManager.saveMap(map, x, y);
+			land.remove(p);
+		}
+	}
+
+	public void saveInterior(){
+
+
+		Interior map = (Interior)land.get(0, 0);
+		int ID = map.getID();
+		ArrayList<Persona> personas = new ArrayList<Persona>();
+		for(Persona persona : land.getPersonas().getPersonas()){
+//			if(persona.toString().contains("Player"))
+//				System.out.println("Player iterated over");
+			if(!persona.toString().contains("Player")){
+					personas.add(persona);
+			}
+
+		}
+//		if (personas.size() != 0){
+			//System.out.println("Saving Personas");
+			SaveManager.saveInteriorPersonas(personas, ID);
+			//System.out.println("            Personas: " + land.getPersonas().size());
+			if(!land.isOutside()) System.out.println(personas.size());
+
+			for (Persona p1 : personas){
+//				Demigods.getEngine().unloadPerson(p1);
+			}
+			//System.out.println("            Unloaded Personas: " + personas.size());
+			//System.out.println("____________Saved Personas: " + personas.size() + ",  " + Demigods.getLoc(p) + ", " + personas);
+//		}
+
+		if(map != null){
+			//System.out.println("Saving a Map " + Demigods.getLoc(p));
+			SaveManager.saveInterior(map);
+			land.remove(new Point(0,0));
+		}
+	}
+	private Map loadTop() throws DoodleScapeException{
+		Point p = areasStack.get(0);
+		Map map = loadMap(p);
+		return map;
+		//load the map from memory, keep a reference of it
+		//put it in the map
+		//if at any point it wasn't properly done, throw an exception
+	}
+
+	private Map loadMap(Point p) throws DoodleScapeException{
+
+		int x = p.getX();
+		int y = p.getY();
+
+		if(land.get(x, y) != null){
+			return null;
+		}
+		try{
+			Map map =  SaveManager.loadMap(x, y);
+			ArrayList<Persona> personas = null;
+			try{
+				personas = SaveManager.loadPersonas(x, y);
+			}catch (NoSavedMapException e){
+				//throw new DoodleScapeException("No saved Personas at " + x + ", " + y);
+			}
+			if(personas != null){
+
+				//System.out.println("____________Loaded Personas: " + personas.size() + ",  " + Demigods.getLoc(p) + ", " + personas);
+				for (Persona person : personas){
+					if(!land.getPersonas().contains(person))
+					land.getPersonas().add(person);
+//					for (Civilization civ : Demigods.getEngine().getCivilizations()){
+//						if (person.getTeam() == civ.getTeam()){
+//							civ.add(person);
+//						}
+//					}
+
+				}
+			}
+			return map;
+		}catch (NoSavedMapException e){
+			throw new DoodleScapeException("No saved Map at " + x + ", " + y);
+		}
+
+		//load the map from memory, keep a reference of it
+		//put it in the map
+		//if at any point it wasn't properly done, throw an exception
+	}
+
+	public Map loadInterior(int ID) throws DoodleScapeException{
+
+		try{
+			Map map =  SaveManager.loadInterior(ID, Demigods.getSaveName());
+			ArrayList<Persona> personas = null;
+			try{
+				personas = SaveManager.loadInteriorPersonas(ID);
+			}catch (NoSavedMapException e){
+				//throw new DoodleScapeException("No saved Personas at " + x + ", " + y);
+			}
+			if(personas != null){
+
+				System.out.println("____________Loaded Personas: " + personas.size() +  ", " + personas);
+				for (Persona person : personas){
+					if(!land.getPersonas().contains(person)){
+						land.getPersonas().add(person);
+					}
+//					for (Civilization civ : Demigods.getEngine().getCivilizations()){
+//						if (person.getTeam() == civ.getTeam()){
+//							civ.add(person);
+//						}
+//					}
+
+				}
+				System.out.println(land.getPersonas());
+
+			}
+			return map;
+		}catch (DoodleScapeException e){
+			throw new DoodleScapeException("No saved Interior " + ID);
+		}
+
+		//load the map from memory, keep a reference of it
+		//put it in the map
+		//if at any point it wasn't properly done, throw an exception
+	}
+
+	private Map generateNewMap(Point p){
+
+		return new Map(land.getSeed(), land.getRand(), p.getX(), p.getY());
+		//make a new map
+		//put it in the HM and the point p.
+	}
+
+
+	public void setLand(Land land){
+		this.land = land;
+	}
+
+	public void forceSaveCenter(){
+		for(int i = 0; i < areasStack.size(); ++i){
+			if (areasStack.get(i).equals(new Point(0,0))){
+				save(i);
+				break;
+			}
+		}
+	}
+	public void forceSaveStack(){
+		while (areasStack.size() > 0){
+			handleTop();
+		}
+	}
+
+}

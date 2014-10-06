@@ -1,0 +1,276 @@
+package game;
+
+import entities.characters.personas.Persona;
+import gameAreas.*;
+
+import java.io.*;
+import java.util.ArrayList;
+
+import util.DoodleScapeException;
+import util.NoSavedMapException;
+
+public class SaveManager {
+
+
+    public static void createDirectory(String name) {
+        File saveDir = new File("sav/" + name);
+        if (saveDir.exists()) try {
+            delete(saveDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //if (!saveDir.mkdir()) throw new UncheckedDoodleScapeException(name + " Something ain't right here.");
+        saveDir.mkdir();
+
+        File interiorsDir = new File("sav/" + name + "/interiors");
+        //if (!interiorsDir.mkdir()) throw new UncheckedDoodleScapeException(name + " Something ain't right here.");
+
+        interiorsDir.mkdir();
+
+        File worldDir = new File("sav/" + name + "/world");
+        //if (!worldDir.mkdir()) throw new UncheckedDoodleScapeException(name + " Something ain't right here.");
+
+        worldDir.mkdir();
+
+        System.out.println("Directories Initialized");
+    }
+
+    public static void delete(File file)
+            throws IOException {
+
+        if (file.isDirectory()) {
+
+            //directory is empty, then delete it
+            if (file.list().length == 0) {
+
+                file.delete();
+
+            } else {
+
+                //list all the directory contents
+                String files[] = file.list();
+
+                for (String temp : files) {
+                    //construct the file structure
+                    File fileDelete = new File(file, temp);
+
+                    //recursive delete
+                    delete(fileDelete);
+                }
+
+                //check the directory again, if empty then delete it
+                if (file.list().length == 0) {
+                    file.delete();
+                }
+            }
+
+        } else {
+            //if file, then delete it
+            file.delete();
+        }
+    }
+
+    public static void saveInfEngine(Engine e) {
+        FileOutputStream fileOut;
+        try {
+            fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/save.dss");
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(e);
+            objectOut.close();
+            fileOut.close();
+        } catch (FileNotFoundException ee) {
+            createDirectory(Demigods.getSaveName());
+            saveInfEngine(e);
+        } catch (IOException ee) {
+            ee.printStackTrace();
+        }
+    }
+
+    public static Engine loadEngine(String name) {
+        Engine e = null;
+        FileInputStream fileIn;
+        try {
+            fileIn = new FileInputStream("sav/" + name + "/save.dss");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            e = (Engine) objectIn.readObject();
+            objectIn.close();
+            fileIn.close();
+        } catch (IOException ee) {
+            ee.printStackTrace();
+        } catch (ClassNotFoundException ee) {
+            ee.printStackTrace();
+        }
+        return e;
+    }
+
+    public static void saveOverworld(Region r) {
+        FileOutputStream fileOut;
+        try {
+            fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/overworld.dsr");
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(r);
+            objectOut.close();
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Region loadOverworld(String name) throws DoodleScapeException {
+        Region r = null;
+        FileInputStream fileIn;
+        try {
+            fileIn = new FileInputStream("sav/" + name + "/overworld.dsr");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            r = (Region) objectIn.readObject();
+            objectIn.close();
+            fileIn.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return r;
+    }
+
+    public static void saveInterior(Interior i) {
+        FileOutputStream fileOut;
+        try {
+            fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/interiors/" + i.getID() + ".dsi");
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(i);
+            objectOut.close();
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Interior loadInterior(int id, String name) throws DoodleScapeException {
+        Interior i = null;
+        FileInputStream fileIn;
+        try {
+            fileIn = new FileInputStream("sav/" + name + "/interiors/" + id + ".dsi");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            i = (Interior) objectIn.readObject();
+            objectIn.close();
+            fileIn.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (i == null) throw new DoodleScapeException("Hey bro! That ID DNE.");
+        return i;
+    }
+
+    public static void saveMap(Map m, int x, int y) {
+        FileOutputStream fileOut;
+        try {
+            try {
+                fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/world/" + x + "/" + y + ".dsm");
+            } catch (FileNotFoundException e1) {
+                File overworldXdir = new File("sav/" + Demigods.getSaveName() + "/world/" + x);
+                overworldXdir.mkdir();
+                fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/world/" + x + "/" + y + ".dsm");
+            }
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(m);
+            objectOut.close();
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Map loadMap(int x, int y) throws NoSavedMapException {
+        Map m = null;
+        FileInputStream fileIn;
+        try {
+            fileIn = new FileInputStream("sav/" + Demigods.getSaveName() + "/world/" + x + "/" + y + ".dsm");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            m = (Map) objectIn.readObject();
+            objectIn.close();
+            fileIn.close();
+        } catch (IOException e) {
+            throw new NoSavedMapException("Hey! Generate a map!");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (m == null) throw new NoSavedMapException("Hey! Generate a map!");
+        return m;
+    }
+
+    public static void savePersonas(ArrayList<Persona> p, int x, int y) {
+        FileOutputStream fileOut;
+        try {
+            try {
+                fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/world/" + x + "/" + y + "_Personas.dsp");
+            } catch (FileNotFoundException e1) {
+                File overworldXdir = new File("sav/" + Demigods.getSaveName() + "/world/" + x);
+                overworldXdir.mkdir();
+                fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/world/" + x + "/" + y + "_Personas.dsp");
+            }
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(p);
+            objectOut.close();
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void saveInteriorPersonas(ArrayList<Persona> p, int ID) {
+        FileOutputStream fileOut;
+        try {
+            try {
+                fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/interiors/" + ID + "_Personas.dsp");
+            } catch (FileNotFoundException e1) {
+                File interiorDir = new File("sav/" + Demigods.getSaveName() + "/interiors/");
+                interiorDir.mkdir();
+                fileOut = new FileOutputStream("sav/" + Demigods.getSaveName() + "/interiors/" + ID + "_Personas.dsp");
+            }
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(p);
+            objectOut.close();
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static ArrayList<Persona> loadPersonas(int x, int y) throws NoSavedMapException {
+        ArrayList<Persona> personas = null;
+        FileInputStream fileIn;
+        try {
+            fileIn = new FileInputStream("sav/" + Demigods.getSaveName() + "/world/" + x + "/" + y + "_Personas.dsp");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            personas = (ArrayList<Persona>) objectIn.readObject();
+            objectIn.close();
+            fileIn.close();
+        } catch (IOException e) {
+            throw new NoSavedMapException("Hey! A bit of a problem, IOE from SaveManager.loadPersonas");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return personas;
+    }
+
+    public static ArrayList<Persona> loadInteriorPersonas(int ID) throws NoSavedMapException {
+        ArrayList<Persona> personas = null;
+        FileInputStream fileIn;
+        try {
+            fileIn = new FileInputStream("sav/" + Demigods.getSaveName() + "/interiors/" + ID + "_Personas.dsp");
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            personas = (ArrayList<Persona>) objectIn.readObject();
+            objectIn.close();
+            fileIn.close();
+        } catch (IOException e) {
+            throw new NoSavedMapException("Hey! A bit of a problem, IOE from SaveManager.loadInteriorPersonas");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return personas;
+    }
+
+}

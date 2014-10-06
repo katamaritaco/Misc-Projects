@@ -1,0 +1,61 @@
+<html>
+<head>
+<script type="text/javascript">
+
+	function main(){
+		var map = new Array();
+
+		var height = 12;
+		var width = 2000;
+
+		var GROUND = 2;
+		var NOTHING = 0;
+
+		var object_spacing = 9;
+
+		for (var i = 0; i < height; i++){
+			map[i] = new Array();
+			for (var j = 0; j < width; j++){
+				if (i == 0 || i == height - 1){
+					map[i].push(GROUND);
+				}
+				else if ( i == height - 2 ){
+					if ( j % object_spacing == 0)
+					{
+						if (Math.random() < .83) // randomly add ground sometimes 
+							map[i].push(GROUND);
+						else
+							map[i].push(NOTHING);
+					}
+					else{ // not at correct spacing
+						map[i].push(NOTHING);
+					}
+				}
+				else{ // in the middle of the map
+					map[i].push(NOTHING);
+				}
+			}
+		}
+
+		// output the map, limiting line to 80 characters
+		var output = JSON.stringify(map);
+		var html_out = "";
+		var line_len = 80;
+		var end_line;
+		for ( var i = 0; i < output.length; i += line_len){
+			end_line = i + line_len;
+			if (end_line > output.length){
+				end_line = output.length;
+			}
+			html_out += output.substring(i, end_line) + "<br>";
+		}
+		document.getElementById("map_text").innerHTML = "map = " + html_out;
+	}
+
+</script>
+</head>
+<body onload="main()">
+<span id="map_text"></span>
+</body>
+</html>
+
