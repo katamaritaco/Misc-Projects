@@ -1,4 +1,6 @@
-<h1>README</h1>
+# Interactive Dance Environment
+
+## This project was made by Emanuel Rosu, Gooi Liang, and Nick Heindl. It took second place overall at Boilermake. It is our attempt to make a handsfree programming IDE.
 
 IronPython integration: 
   1. download IronPython: http://ironpython.codeplex.com/downloads/get/723206
