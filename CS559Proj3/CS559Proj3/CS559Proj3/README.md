@@ -2,6 +2,8 @@
 * Nathan Deisinger (deisinge, ndeisigner@wisc.edu)
 * Nick Heindl (heindl, nheindl@wisc.edu)
 
+![Gooch Shading!](Screenshot3.jpg)
+
 ##README:
 
 Instructions:
@@ -36,3 +38,8 @@ When using basic textures and Phong shading, shadows can be toggled by pressing 
 	Freetype was attempted to be implemented late in the game, due to a misinterpretation of the project requirements.  In the end, we could not get the version of Freetype we were using (code by NeHe productions) to work with our project once we began actually rendering the game world; thus, text in-game is rendered using FreeGLUT’s text functions.
 
 #### Libraries we used: freeglut, glm, devil, libnoise, box2d, and an attempt at freetype
+
+![Screenshots!](Screenshot1.jpg)
+![Screenshots!](Screenshot2.jpg)
+![Screenshots!](Screenshot4.jpg)
+![Screenshots!](Screenshot5.jpg)
