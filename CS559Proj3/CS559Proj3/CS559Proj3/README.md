@@ -3,6 +3,10 @@
 * Nick Heindl (heindl, nheindl@wisc.edu)
 
 ![Gooch Shading!](Screenshot3.jpg)
+![Screenshots!](Screenshot1.jpg)
+![Screenshots!](Screenshot2.jpg)
+![Screenshots!](Screenshot4.jpg)
+![Screenshots!](Screenshot5.jpg)
 
 ##README:
 
@@ -39,7 +43,4 @@ When using basic textures and Phong shading, shadows can be toggled by pressing 
 
 #### Libraries we used: freeglut, glm, devil, libnoise, box2d, and an attempt at freetype
 
-![Screenshots!](Screenshot1.jpg)
-![Screenshots!](Screenshot2.jpg)
-![Screenshots!](Screenshot4.jpg)
-![Screenshots!](Screenshot5.jpg)
+
